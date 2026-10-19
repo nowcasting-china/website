@@ -33,7 +33,7 @@ The dashboard design builds on [recessionrisk.com](https://recessionrisk.com) by
 
 ## Data sources
 
-National Bureau of Statistics (GDP, industrial production, retail sales, electricity production, new construction, manufacturing and non-manufacturing PMIs, business climate index); General Administration of Customs (exports); Ministry of Transport (freight traffic); S&P Global (RatingDog manufacturing PMI). Institution benchmarks are collected manually.
+NBS, MOT, S&P Global via Haver Analytics; retail sales, non-manufacturing PMI and the GDP and exports revision histories via Macrobond. Panel: IP, electricity, construction, exports, freight, NBS and S&P Global PMIs, retail sales, non-manufacturing PMI, business climate index, GDP. Institution benchmarks are collected manually.
 
 ## Declaration on the use of generative AI
 
