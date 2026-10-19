@@ -7,7 +7,7 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261019b">
+<link rel="stylesheet" href="styles.css?v=20261019c">
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
@@ -29,6 +29,7 @@
     <button class="tab-button active" data-tab="nowcast">Nowcast</button>
     <button class="tab-button" data-tab="annual">Annual rate</button>
     <button class="tab-button" data-tab="faq">FAQ</button>
+    <a class="paper-button" id="paper-btn" href="paper.pdf" download="Nowcasting_Real_GDP_Growth_for_China.pdf" hidden>Download paper</a>
   </div>
 
   <div id="tab-nowcast" class="tab-panel active">
@@ -116,16 +117,26 @@
       <p><b>The Spring Festival.</b> Since 2012 the NBS publishes industrial production, electricity, construction and retail sales as one combined value for January and February. The model keeps that value and links it to its January and February estimates through an aggregation equation (below).</p>
 
       <h3>What is the methodology?</h3>
-      <p>A Bayesian dynamic factor model with a time-varying mean, heterogeneous dynamics, stochastic volatility and outliers. For series \(i\) in month \(t\):</p>
+      <p>A Bayesian dynamic factor model with a time-varying mean, heterogeneous dynamics, stochastic volatility and outliers. The equations for series \(i\) in month \(t\) are the following.</p>
       <div class="faq-math">
-        \[ y_{i,t} = \mu_{i,t} + \lambda_{i,0} f_t + \lambda_{i,1} f_{t-1} + \dots + \lambda_{i,6} f_{t-6} + e_{i,t} \]
+        \[ y_{i,t} = \mu_{i,t} + \lambda_{i,0} f_t + \lambda_{i,1} f_{t-1} + \dots + \lambda_{i,m} f_{t-m} + e_{i,t} \]
         \[ \mu_{i,t} = \mu_{i,t-1} + \eta_{i,t}, \qquad \eta_{i,t} \sim N(0, \sigma^2_{\mu,i}) \]
-        \[ f_t = \phi_1 f_{t-1} + \dots + \phi_6 f_{t-6} + u_t, \qquad u_t \sim N(0, \sigma^2_{f,t}) \]
-        \[ e_{i,t} = \varepsilon_{i,t} + o_{i,t}, \qquad \varepsilon_{i,t} = \rho_{i,1} \varepsilon_{i,t-1} + \dots + \rho_{i,6} \varepsilon_{i,t-6} + \sigma_{i,t} v_{i,t}, \qquad o_{i,t} = \gamma_{i,t} \zeta_{i,t}, \; \gamma_{i,t} \in \{0,1\} \]
+        \[ f_t = \phi_1 f_{t-1} + \dots + \phi_p f_{t-p} + u_t, \qquad u_t \sim N(0, \sigma^2_{f,t}) \]
+        \[ e_{i,t} = \varepsilon_{i,t} + o_{i,t}, \qquad \varepsilon_{i,t} = \rho_{i,1} \varepsilon_{i,t-1} + \dots + \rho_{i,q} \varepsilon_{i,t-q} + \sigma_{i,t} v_{i,t}, \qquad o_{i,t} = \gamma_{i,t} \zeta_{i,t}, \; \gamma_{i,t} \in \{0,1\} \]
         \[ \log \sigma^2_{i,t} = \phi_{h,i} \log \sigma^2_{i,t-1} + \omega_{i,t}, \qquad \log \sigma^2_{f,t} = \phi_{h,f} \log \sigma^2_{f,t-1} + \omega_{f,t} \]
       </div>
+      <p><b>Notation.</b></p>
+      <ul class="faq-notation">
+        <li>\(y_{i,t}\): series \(i = 1, \dots, n\) in month \(t\), as it enters the model (growth rate or survey level).</li>
+        <li>\(\mu_{i,t}\): the time-varying mean of series \(i\), with innovation variance \(\sigma^2_{\mu,i}\).</li>
+        <li>\(f_t\): the common factor; \(\lambda_{i,0}, \dots, \lambda_{i,m}\): the loadings of series \(i\) on the factor and its first \(m\) lags.</li>
+        <li>\(\phi_1, \dots, \phi_p\): the autoregressive coefficients of the factor, of order \(p\); \(u_t\): its shock, with time-varying variance \(\sigma^2_{f,t}\).</li>
+        <li>\(e_{i,t}\): the idiosyncratic component of series \(i\), the sum of an autoregressive part \(\varepsilon_{i,t}\) of order \(q\), with coefficients \(\rho_{i,1}, \dots, \rho_{i,q}\), and an outlier term \(o_{i,t}\).</li>
+        <li>\(\sigma_{i,t}\): the time-varying standard deviation of the idiosyncratic shock \(v_{i,t}\); \(\gamma_{i,t}\): the indicator of an outlier in month \(t\), of size \(\zeta_{i,t}\).</li>
+        <li>\(\phi_{h,i}, \phi_{h,f}\): the persistence of the log-volatilities; \(\omega_{i,t}, \omega_{f,t}\): their shocks.</li>
+      </ul>
       <ul>
-        <li><b>Common factor</b> \(f_t\): the signal shared by all series, with its own stochastic volatility \(\sigma^2_{f,t}\). Each series responds to it with its own lags, \(\lambda_{i,0}, \dots, \lambda_{i,6}\), so leading indicators and lagging ones can coexist.</li>
+        <li><b>Common factor</b> \(f_t\): the signal shared by all series, with its own stochastic volatility \(\sigma^2_{f,t}\). Each series responds to it with its own lags, \(\lambda_{i,0}, \dots, \lambda_{i,m}\), so leading indicators and lagging ones can coexist.</li>
         <li><b>Time-varying mean</b> \(\mu_{i,t}\): a random walk that absorbs the secular slowdown of Chinese growth without forcing it into the factor.</li>
         <li><b>Idiosyncratic component</b> \(e_{i,t}\): series-specific dynamics with stochastic volatility \(\sigma^2_{i,t}\), plus an outlier term \(o_{i,t}\) that is switched on only in rare months, such as the pandemic, so that a few extreme observations do not drive the estimates.</li>
         <li><b>Quarterly series</b> (GDP, the business climate index) are linked to the monthly latent variables by summing the three months of the quarter. <b>Combined January-February releases</b> enter as \(\bar g_t = w\, g_t^{\mathrm{Jan}} + (1-w)\, g_t^{\mathrm{Feb}}\) with \(w = 1/2\).</li>
@@ -136,7 +147,7 @@
 
       <h3>How often are the results updated?</h3>
       <p>Every time a release in the panel comes out. On each release day the model is re-estimated with all the data published up to that day, and the nowcasts for the current quarter, the next quarter and the year are updated. A quarter's cycle runs from three months before it starts (forecast) through the quarter itself (nowcast) to the month of its GDP release (backcast). The release calendar for <span id="faq-cal-year">2026</span>, China dates:</p>
-      <div class="q-table-wrap"><table class="q-table faq-cal" id="faq-calendar"></table></div>
+      <div class="faq-cal-wrap"><table class="q-table faq-cal" id="faq-calendar"></table></div>
       <p class="q-note">Past dates (grey) are the actual releases; future dates (bold) are the published schedules of the NBS and the customs administration and the calendar of the private PMI. Freight traffic has no published schedule, so its dates are approximate. A dash means no separate release: January and February activity and trade data come out together in March, and the releases for December and the fourth quarter follow in January of the next year.</p>
     </div>
   </div>
@@ -146,6 +157,6 @@
     Institution benchmarks and IMF WEO Q4/Q4 collected manually.
   </div>
 </div>
-<script src="app.js?v=20261019b"></script>
+<script src="app.js?v=20261019c"></script>
 </body>
 </html>
