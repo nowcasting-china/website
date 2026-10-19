@@ -107,3 +107,4 @@ body.public #a-flow th:nth-child(4), body.public #a-flow td:nth-child(4) { displ
 .faq-cal td { padding: 4px 2px; }
 .faq-cal th:first-child, .faq-cal td:first-child { width: 64px; padding-left: 8px; }
 .faq-notation li { margin-bottom: 2px; }
+.inst-chip .mk { display: inline-block; flex: none; }

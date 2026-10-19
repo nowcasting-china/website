@@ -461,11 +461,21 @@ function tabAnnual(D) {
   Plotly.newPlot('fig-annual', tr, layout, TIMECFG()).then(gd => {
     const box = document.getElementById('inst-controls');
     box.innerHTML = '';
+    // each chip shows the marker the chart uses for that institution (shape, colour, outline)
     const groups = [
-      { label: 'IMF WEO', col: '#E68C1A' }, { label: 'OECD EO', col: '#D926A6' },
-      { label: 'ADB ADO', col: '#7340A6' }, { label: 'WB GEP', col: '#2170D1' },
-      { label: 'Govt. target', col: '#BF1426', match: n => n.startsWith('Govt. target') }
+      { label: 'IMF WEO', col: '#E68C1A', sym: 'triangle-up' }, { label: 'OECD EO', col: '#D926A6', sym: 'diamond' },
+      { label: 'ADB ADO', col: '#7340A6', sym: 'square' },      { label: 'WB GEP', col: '#2170D1', sym: 'circle' },
+      { label: 'Govt. target', col: '#BF1426', sym: 'star', match: n => n.startsWith('Govt. target') }
     ];
+    const SHAPE = {
+      'triangle-up': '<path d="M6 1.2 L11 10.6 L1 10.6 Z"/>',
+      'diamond':     '<path d="M6 0.8 L11.2 6 L6 11.2 L0.8 6 Z"/>',
+      'square':      '<rect x="1.6" y="1.6" width="8.8" height="8.8"/>',
+      'circle':      '<circle cx="6" cy="6" r="4.6"/>',
+      'star':        '<path d="M6 0.6 L7.5 4.3 L11.5 4.5 L8.4 7 L9.4 10.9 L6 8.7 L2.6 10.9 L3.6 7 L0.5 4.5 L4.5 4.3 Z"/>'
+    };
+    const mark = g => `<svg class="mk" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true">` +
+      `<g fill="${g.col}" stroke="#000" stroke-width="${g.sym === 'star' ? 0.5 : 0.8}">${SHAPE[g.sym]}</g></svg>`;
     groups.forEach(g => {
       const idx = gd.data.map((d, i) => ({ n: d.name || '', i }))
         .filter(d => g.match ? g.match(d.n) : d.n === g.label).map(d => d.i);
@@ -474,7 +484,7 @@ function tabAnnual(D) {
       if (!on) Plotly.restyle(gd, { visible: false }, idx);
       const chip = document.createElement('label');
       chip.className = 'inst-chip' + (on ? ' on' : '');
-      chip.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}><span class="dot" style="background:${g.col}"></span>${g.label}`;
+      chip.innerHTML = `<input type="checkbox"${on ? ' checked' : ''}>${mark(g)}${g.label}`;
       chip.querySelector('input').addEventListener('change', e => {
         chip.classList.toggle('on', e.target.checked);
         Plotly.restyle(gd, { visible: e.target.checked }, idx);
