@@ -267,7 +267,17 @@ function showQuarter(qq) {
   const iso = d => d.toISOString().slice(0, 10);
   const xFirst = xs[0] < iso(q0) ? xs[0] : iso(q0);
   const xLast = qq.gdp && qq.gdp.date > iso(qEnd) ? qq.gdp.date : iso(qEnd);
-  const BARW = 2.6 * 86400000;            // bar width: about two and a half days
+  const DAY = 86400000, BARW = 2.0 * DAY, GAPW = 0.35 * DAY;   // bar width two days, gap between neighbours
+  // updates one or two days apart would overlap: a bar that would touch the previous one is moved
+  // just to its right (the slides' rule); positions are noon of the day, shifted where needed
+  const xpos = [];
+  xs.forEach((d, i) => {
+    let t = Date.parse(d + 'T12:00:00Z');
+    if (i > 0 && t - xpos[i - 1] < BARW + GAPW) t = xpos[i - 1] + BARW + GAPW;
+    xpos.push(t);
+  });
+  const xb = xpos.map(t => new Date(t).toISOString().slice(0, 16).replace('T', ' '));
+  const dates = xs.map(d => fmtD(d));
   const byLab = {};
   STACK_ORDER.forEach(l => byLab[l] = P.map(() => 0));
   P.forEach((p, i) => {
@@ -277,12 +287,12 @@ function showQuarter(qq) {
   const tr = [];
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
-    tr.push({ x: xs, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray },
+    tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray },
               hovertemplate: l + ': %{y:+.3f} pp<extra></extra>' });
   });
-  tr.push({ x: xs, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2',
-            line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy },
-            hovertemplate: '%{y:.2f}%<extra>' + lab + '</extra>' });
+  tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2',
+            line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy }, customdata: dates,
+            hovertemplate: 'update %{customdata}: %{y:.2f}%<extra>' + lab + '</extra>' });
   if (qq.gdp) tr.push({ x: [xFirst, xLast], y: [qq.gdp.v, qq.gdp.v], mode: 'lines', name: 'Official GDP', yaxis: 'y2',
                         line: { color: COL.gray, width: 1.5, dash: 'dash' }, hoverinfo: 'skip' });
   // bars on their own symmetric axis (left, pp); the nowcast level on the right axis (percent)
@@ -290,7 +300,7 @@ function showQuarter(qq) {
     barmode: 'relative', hovermode: 'x unified', showlegend: false,
     margin: { l: 55, r: 55, t: 15, b: 60 },
     xaxis: { type: 'date', range: [xFirst, xLast], dtick: 'M1', tick0: iso(q0), tickformat: '%b %Y', ticklabelmode: 'period',
-             title: { text: 'model update', standoff: 12 }, automargin: true, tickfont: { size: 11 }, hoverformat: '%d %b %Y' },
+             title: { text: 'model update', standoff: 12 }, automargin: true, tickfont: { size: 11 }, hoverformat: ' ' },
     shapes: qq.gdp && qq.gdp.date ? [{ type: 'line', x0: qq.gdp.date, x1: qq.gdp.date, y0: 0, y1: 1, yref: 'paper',
              line: { color: COL.gray, width: 1, dash: 'dot' } }] : [],
     yaxis: { title: 'impact, pp', zeroline: true, zerolinecolor: '#999', range: barRange(byLab), fixedrange: false },
