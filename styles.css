@@ -80,3 +80,17 @@ body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
 /* public build: model results only -- the "Actual" column (4th) of the data-flow tables is hidden */
 body.public #q-flow th:nth-child(4), body.public #q-flow td:nth-child(4),
 body.public #a-flow th:nth-child(4), body.public #a-flow td:nth-child(4) { display: none; }
+
+/* FAQ tab */
+.faq h3 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 20px; color: var(--navy); margin: 22px 0 8px; }
+.faq h3:first-of-type { margin-top: 6px; }
+.faq p, .faq li { font-size: 14px; line-height: 1.6; color: #2b2f36; max-width: 920px; }
+.faq ul { padding-left: 20px; }
+.faq-table { border-collapse: collapse; font-size: 13px; margin: 6px 0 12px; }
+.faq-table th, .faq-table td { border-bottom: 1px solid var(--line); padding: 5px 14px 5px 0; text-align: left; }
+.faq-table th { color: var(--muted); font-weight: 600; }
+.faq-math { overflow-x: auto; font-size: 15px; margin: 6px 0 4px; }
+.faq-cal td, .faq-cal th { text-align: center; white-space: nowrap; }
+.faq-cal td:first-child, .faq-cal th:first-child { text-align: left; }
+.faq-cal td.sched { color: var(--navy); font-weight: 600; }
+.faq-cal td.past { color: var(--muted); }

@@ -78,8 +78,33 @@ fetch('data/dashboard.json?t=' + Date.now()).then(r => r.json()).then(D => {
   if (D.public) document.body.classList.add('public');
   document.getElementById('last-updated').textContent =
     (D.latest_vintage ? 'vintage ' + D.latest_vintage + ' · built ' : '') + D.generated;
-  tabNowcast(D); renderQuarters(D); tabAnnual(D); renderYears(D);
+  tabNowcast(D); renderQuarters(D); tabAnnual(D); renderYears(D); renderCalendar(D);
 });
+
+// ---- FAQ tab: the release calendar of the year (dashboard.json: calendar) ----
+const CAL_SERIES = [['N924GDXY', 'Industrial production'], ['cntrad0715', 'Retail sales'], ['N924OVU', 'Electricity'],
+  ['Y924HSAT', 'New construction'], ['N924IXD', 'Exports'], ['N924TTH', 'Freight'], ['S924VM', 'Mfg PMI (NBS)'],
+  ['cnsurv0013', 'Non-mfg PMI (NBS)'], ['S924VPMM', 'RatingDog PMI'], ['N924VB', 'Business climate'], ['N924NGPY', 'Real GDP']];
+function renderCalendar(D) {
+  const C = D.calendar;  const el = document.getElementById('faq-calendar');
+  if (!C || !C.rows || !el) return;
+  document.getElementById('faq-cal-year').textContent = C.year;
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmt = s => { const d = new Date(s + 'T00:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; };
+  const today = new Date().toISOString().slice(0, 10);
+  const by = {};  C.rows.forEach(r => { by[r.series + '|' + r.ref] = r.release; });
+  let h = '<thead><tr><th>Reference<br>period</th>' + CAL_SERIES.map(s => `<th>${s[1]}</th>`).join('') + '</tr></thead><tbody>';
+  for (let m = 1; m <= 12; m++) {
+    const ref = C.year + '-' + String(m).padStart(2, '0');
+    h += `<tr><td>${MON[m - 1]} ${C.year}${m % 3 === 0 ? ' / Q' + m / 3 : ''}</td>`;
+    CAL_SERIES.forEach(s => {
+      const d = by[s[0] + '|' + ref];
+      h += d ? `<td class="${d > today ? 'sched' : 'past'}">${fmt(d)}</td>` : '<td class="ref">&ndash;</td>';
+    });
+    h += '</tr>';
+  }
+  el.innerHTML = h + '</tbody>';
+}
 
 document.querySelectorAll('.tab-button').forEach(btn => {
   btn.addEventListener('click', () => {
