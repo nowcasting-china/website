@@ -16,12 +16,12 @@ Results are updated at every data release. The site shows model results only; th
 
 If you use the results or figures from this dashboard, please cite:
 
-> Giannone, D., Miranda-Agrippino, S., Modugno, M., and Zhang, W. (2026). *Nowcasting Real GDP Growth for China*. Working paper.
+> Giannone, D., Miranda-Agrippino, S., Modugno, M., and Zhang, W. (2026). *Nowcasting China*. Working paper.
 
 ```bibtex
 @unpublished{giannone2026nowcasting,
   author = {Giannone, Domenico and Miranda-Agrippino, Silvia and Modugno, Michele and Zhang, Wei},
-  title  = {Nowcasting Real GDP Growth for China},
+  title  = {Nowcasting China},
   note   = {Working paper},
   year   = {2026}
 }
