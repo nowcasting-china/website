@@ -2,7 +2,7 @@
 
 **Live site:** [https://nowcasting-china.github.io/website/](https://nowcasting-china.github.io/website/)
 
-An interactive dashboard of real-time nowcasts of China's real GDP growth, based on a Bayesian **dynamic factor model** with heterogeneous dynamics, time-varying trends, stochastic volatility and outlier adjustments. The model is estimated on a panel of eleven series: real GDP growth and ten timely monthly and quarterly indicators of Chinese activity (industrial production, retail sales, electricity production, new construction, exports, freight traffic, the NBS manufacturing and non-manufacturing PMIs, the RatingDog manufacturing PMI, and the business climate index).
+An interactive dashboard of real-time nowcasts of China's real GDP growth, based on a Bayesian **dynamic factor model** with heterogeneous dynamics, time-varying trends, stochastic volatility and outlier adjustments. The model is estimated on a dataset of eleven series: real GDP growth and ten timely monthly and quarterly indicators of Chinese activity (industrial production, retail sales, electricity production, new construction, exports, freight traffic, the NBS manufacturing and non-manufacturing PMIs, the RatingDog manufacturing PMI, and the business climate index).
 
 The dashboard shows:
 
@@ -33,8 +33,9 @@ The dashboard design builds on [recessionrisk.com](https://recessionrisk.com) by
 
 ## Data sources
 
-NBS, MOT, S&P Global via Haver Analytics; retail sales, non-manufacturing PMI and the GDP and exports revision histories via Macrobond. Panel: IP, electricity, construction, exports, freight, NBS and S&P Global PMIs, retail sales, non-manufacturing PMI, business climate index, GDP. Institution benchmarks are collected manually.
+NBS, MOT, S&P Global via Haver Analytics; retail sales, non-manufacturing PMI and the GDP and exports revision histories via Macrobond. Institution benchmarks are collected manually from IMF, OECD, WB and ADB.
 
 ## Declaration on the use of generative AI
 
-The code for this website and its update pipeline was written with the assistance of Claude Code, a generative AI coding tool developed by Anthropic. This covers the scripts that check for new data releases, run the model at each release, export the results, build the dashboard and publish it to this repository. The econometric model, its specification and priors, the choice of data, and the interpretation of the results are the work of the authors. The authors reviewed the AI-assisted code and checked its output against the model's own results, and they take full responsibility for the content of this site.
+The code for this website and its update pipeline was written with the assistance of Claude Code, a generative AI coding tool developed by Anthropic. This covers the scripts that check for new data releases, run the model at each release, export the results, build the dashboard and publish it to this repository. The econometric model, its specification and priors, the choice of data, and the interpretation of the results are the work of the authors. All AI-assisted suggestions were carefully
+reviewed, and we take full responsibility for the final content and accuracy of this site.
