@@ -93,14 +93,15 @@ function renderCalendar(D) {
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const fmt = s => { const d = new Date(s + 'T00:00:00'); return d.getDate() + ' ' + MON[d.getMonth()]; };
   const today = new Date().toISOString().slice(0, 10);
-  const by = {};  C.rows.forEach(r => { by[r.series + '|' + r.ref] = r.release; });
+  const by = {}, approx = {};  C.rows.forEach(r => { by[r.series + '|' + r.ref] = r.release; if (r.approx) approx[r.series + '|' + r.ref] = true; });
   let h = '<thead><tr><th>Data for</th>' + CAL_SERIES.map(s => `<th>${s[1]}</th>`).join('') + '</tr></thead><tbody>';
   for (let m = 1; m <= 12; m++) {
     const ref = C.year + '-' + String(m).padStart(2, '0');
     h += `<tr><td>${MON[m - 1]}${m % 3 === 0 ? ' / Q' + m / 3 : ''}</td>`;
     CAL_SERIES.forEach(s => {
       const d = by[s[0] + '|' + ref];
-      h += d ? `<td class="${d > today ? 'sched' : 'past'}">${fmt(d)}</td>` : '<td class="ref">&ndash;</td>';
+      const ap = approx[s[0] + '|' + ref];
+      h += d ? `<td class="${d > today ? 'sched' : 'past'}${ap ? ' approx' : ''}"${ap ? ' title="approximate: not yet on a published schedule"' : ''}>${ap ? '~' : ''}${fmt(d)}</td>` : '<td class="ref">&ndash;</td>';
     });
     h += '</tr>';
   }
@@ -259,7 +260,14 @@ function showQuarter(qq) {
   }
 
   // ---- impact of data releases: stacked bars per model update + nowcast line ----
-  const cats = P.map(p => fmtD(p.date));
+  // a date axis over the quarter's whole cycle: from its first day to the end of the month after it
+  // (the month of its GDP release), so an open quarter shows how much of the cycle is still to come
+  const xs = P.map(p => p.date);
+  const q0 = new Date(Date.UTC(qq.y, 3 * qq.q - 3, 1)), qEnd = new Date(Date.UTC(qq.y, 3 * qq.q + 1, 0));
+  const iso = d => d.toISOString().slice(0, 10);
+  const xFirst = xs[0] < iso(q0) ? xs[0] : iso(q0);
+  const xLast = qq.gdp && qq.gdp.date > iso(qEnd) ? qq.gdp.date : iso(qEnd);
+  const BARW = 2.6 * 86400000;            // bar width: about two and a half days
   const byLab = {};
   STACK_ORDER.forEach(l => byLab[l] = P.map(() => 0));
   P.forEach((p, i) => {
@@ -269,20 +277,22 @@ function showQuarter(qq) {
   const tr = [];
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
-    tr.push({ x: cats, y: byLab[l], type: 'bar', name: l, marker: { color: LABEL_COL[l] || COL.gray },
+    tr.push({ x: xs, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray },
               hovertemplate: l + ': %{y:+.3f} pp<extra></extra>' });
   });
-  tr.push({ x: cats, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2',
+  tr.push({ x: xs, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2',
             line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy },
             hovertemplate: '%{y:.2f}%<extra>' + lab + '</extra>' });
-  if (qq.gdp) tr.push({ x: [cats[0], cats[cats.length - 1]], y: [qq.gdp.v, qq.gdp.v], mode: 'lines', name: 'Official GDP', yaxis: 'y2',
+  if (qq.gdp) tr.push({ x: [xFirst, xLast], y: [qq.gdp.v, qq.gdp.v], mode: 'lines', name: 'Official GDP', yaxis: 'y2',
                         line: { color: COL.gray, width: 1.5, dash: 'dash' }, hoverinfo: 'skip' });
   // bars on their own symmetric axis (left, pp); the nowcast level on the right axis (percent)
   Plotly.newPlot('fig-q-impact', tr, Object.assign({}, LAYOUT, {
     barmode: 'relative', hovermode: 'x unified', showlegend: false,
     margin: { l: 55, r: 55, t: 15, b: 60 },
-    xaxis: { type: 'category', title: { text: 'model update', standoff: 12 }, automargin: true,
-             tickangle: cats.length > 8 ? -45 : 0, tickfont: { size: 11 } },
+    xaxis: { type: 'date', range: [xFirst, xLast], dtick: 'M1', tick0: iso(q0), tickformat: '%b %Y', ticklabelmode: 'period',
+             title: { text: 'model update', standoff: 12 }, automargin: true, tickfont: { size: 11 }, hoverformat: '%d %b %Y' },
+    shapes: qq.gdp && qq.gdp.date ? [{ type: 'line', x0: qq.gdp.date, x1: qq.gdp.date, y0: 0, y1: 1, yref: 'paper',
+             line: { color: COL.gray, width: 1, dash: 'dot' } }] : [],
     yaxis: { title: 'impact, pp', zeroline: true, zerolinecolor: '#999', range: barRange(byLab), fixedrange: false },
     yaxis2: { title: { text: 'nowcast, percent', font: { color: COL.navy } }, tickfont: { color: COL.navy },
               overlaying: 'y', side: 'right', showgrid: false, zeroline: false,
