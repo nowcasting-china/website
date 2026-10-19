@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>China GDP Nowcast</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20261019a">
+</head>
+<body>
+<div class="container">
+
+  <div class="header" id="site-header">
+    <div class="header-left">
+      <h1>China GDP Nowcast</h1>
+      <p>Bayesian dynamic factor model &middot; weekly real-time update</p>
+    </div>
+    <div class="header-right">
+      <span class="meta-label">Last updated</span>
+      <span id="last-updated" class="meta-value">--</span>
+    </div>
+  </div>
+
+  <div class="tab-navigation">
+    <button class="tab-button active" data-tab="nowcast">Nowcast</button>
+    <button class="tab-button" data-tab="annual">Annual rate</button>
+  </div>
+
+  <div id="tab-nowcast" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">Quarterly GDP growth: nowcast history and current reading
+        <span class="hint">drag the range slider, or use the buttons, to change the window</span></div>
+      <div id="fig-nowcast" class="fig-tall"></div>
+    </div>
+
+    <div class="card" id="quarter-card">
+      <div class="card-title">Nowcast by target quarter
+        <span class="hint">pick a quarter: density of the latest estimate, impact of data releases, and the data flow</span></div>
+      <div class="q-chips" id="q-chips"></div>
+      <p class="q-summary" id="q-summary"></p>
+      <div class="q-grid">
+        <div class="q-left">
+          <div class="q-subtitle" id="q-density-title">Probability density</div>
+          <div id="fig-q-density" class="fig-q-density"></div>
+          <div class="q-subtitle">Impact of data releases</div>
+          <div id="fig-q-impact" class="fig-q-impact"></div>
+          <div id="q-impact-legend" class="q-legend"></div>
+        </div>
+        <div class="q-right">
+          <div class="q-subtitle" id="q-flow-title">Data flow</div>
+          <div class="q-table-wrap"><table class="q-table" id="q-flow"></table></div>
+          <button class="q-expand" id="q-expand">Expand</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-annual" class="tab-panel">
+    <div class="card">
+      <div class="card-title">Annual growth rate: model estimate vs institutions</div>
+      <div class="inst-controls" id="inst-controls"></div>
+      <div id="fig-annual" class="fig-tall"></div>
+    </div>
+
+    <div class="card" id="year-card">
+      <div class="card-title">Annual rate by year
+        <span class="hint">pick a year: density of the latest estimate, impact of data releases on the annual rate, and the data flow</span></div>
+      <div class="q-chips" id="a-chips"></div>
+      <p class="q-summary" id="a-summary"></p>
+      <div class="q-grid">
+        <div class="q-left">
+          <div class="q-subtitle" id="a-density-title">Probability density</div>
+          <div id="fig-a-density" class="fig-q-density"></div>
+          <div class="q-subtitle">Impact of data releases on the annual rate</div>
+          <div id="fig-a-impact" class="fig-q-impact"></div>
+          <div id="a-impact-legend" class="q-legend"></div>
+        </div>
+        <div class="q-right">
+          <div class="q-subtitle" id="a-flow-title">Data flow</div>
+          <div class="q-table-wrap"><table class="q-table" id="a-flow"></table></div>
+          <button class="q-expand" id="a-expand">Expand</button>
+        </div>
+      </div>
+      <p class="q-note">The annual rate is the mean of the four quarterly YoY rates: released quarters at the official number, open quarters at the model estimate. A release's impact on the annual rate is its impact on each decomposed quarter divided by four; a GDP release also carries the switch from the model's backcast to the official quarterly number. The remainder is the change in the estimate not explained by the listed releases: re-estimation of the model between updates, data revisions, and any open quarter not decomposed at that date. The same definition is used on the nowcast tab.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Model results only: the released data values are not shown. The model is estimated on releases of the NBS, the Ministry of Transport, the General Administration of Customs and S&amp;P Global. Panel: IP, electricity, construction, exports, freight, NBS and S&amp;P Global PMIs, retail sales, non-manufacturing PMI, business climate index, GDP.
+    Institution benchmarks and IMF WEO Q4/Q4 collected manually.
+  </div>
+</div>
+<script src="app.js?v=20261019a"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+:root {
+  --navy: #0b2566; --navy-soft: #1f4e9c; --red: #c8452a;
+  --bg: #f6f7fa; --card: #ffffff; --ink: #1c2430; --muted: #6b7482;
+  --line: #e3e7ee;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
+  background: var(--bg) url('china.png') center top / cover no-repeat fixed; }
+.card { backdrop-filter: blur(3px); }
+.container { max-width: 1180px; margin: 0 auto; padding: 22px 26px 40px; }
+
+.header { display: flex; justify-content: space-between; align-items: flex-end;
+  padding: 18px 22px; border-radius: 12px; margin-bottom: 16px;
+  background: linear-gradient(105deg, var(--navy) 0%, var(--navy-soft) 70%, #3a6fc4 100%);
+  color: #fff; }
+.header h1 { font-family: 'DM Serif Display', serif; font-size: 28px; font-weight: 400; }
+.header p { font-size: 13px; opacity: .85; margin-top: 2px; }
+.meta-label { font-size: 11px; opacity: .7; display: block; text-align: right; }
+.meta-value { font-size: 14px; font-weight: 600; }
+
+.tab-navigation { display: flex; gap: 8px; margin-bottom: 14px; }
+.tab-button { border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  padding: 8px 18px; border-radius: 8px; font-size: 14px; font-family: inherit;
+  font-weight: 500; cursor: pointer; }
+.tab-button.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card { background: rgba(255,255,255,0.80); border: 1px solid var(--line); border-radius: 12px;
+  padding: 16px 18px; margin-bottom: 16px; }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.card-title .hint { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 10px; }
+.fig-tall { width: 100%; height: 560px; }
+.fig-mid  { width: 100%; height: 420px; }
+
+.footer { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+.inst-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; }
+.inst-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+  border: 1px solid var(--line); border-radius: 16px; padding: 4px 12px;
+  cursor: pointer; user-select: none; background: #fff; color: var(--muted); }
+.inst-chip input { accent-color: var(--navy); cursor: pointer; }
+.inst-chip .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.inst-chip.on { color: var(--ink); border-color: #c9d2df; }
+
+/* ---- per-quarter section (NY Fed style) ---- */
+.q-chips { display: flex; gap: 6px; align-items: baseline; margin: 6px 0 4px; }
+.q-chip { font-family: 'DM Serif Display', serif; font-size: 20px; color: #9aa4b5; background: none;
+  border: none; cursor: pointer; padding: 2px 8px; border-bottom: 3px solid transparent; }
+.q-chip.active { color: var(--navy); border-bottom-color: var(--red); }
+.q-chip + .q-chip::before { content: ''; }
+.q-summary { font-size: 13.5px; color: var(--ink); margin: 2px 0 10px; line-height: 1.5; }
+.q-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; }
+@media (max-width: 900px) { .q-grid { grid-template-columns: 1fr; } }
+.q-subtitle { font-size: 14px; font-weight: 600; margin: 4px 0 2px; color: var(--ink); }
+.fig-q-density { width: 100%; height: 230px; }
+.fig-q-impact  { width: 100%; height: 420px; }
+.q-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 2px 6px; font-size: 11.5px; color: var(--ink); }
+.q-legend .item { display: inline-flex; align-items: center; gap: 5px; }
+.q-legend .sq { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.q-legend .ln { display: inline-block; width: 18px; height: 0; border-top: 2px solid; }
+.q-table td:first-child { white-space: nowrap; }
+.q-table-wrap { max-height: 600px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.q-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.q-table th { text-align: left; font-weight: 600; font-size: 11.5px; color: var(--muted);
+  padding: 6px 8px; border-bottom: 1px solid var(--line); background: #fbfcfe; position: sticky; top: 0; }
+.q-table th.num, .q-table td.num { text-align: right; }
+.q-table td { padding: 4px 8px; vertical-align: top; line-height: 1.3; }
+.q-table tr.q-update td { font-weight: 700; padding-top: 9px; border-top: 1px solid var(--line); }
+.q-table tr.q-update:first-of-type td { border-top: none; }
+.q-table td.pos { color: #1f7a3a; } .q-table td.neg { color: #c8452a; }
+.q-table .sq { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 2px; vertical-align: 1px; }
+.q-table .rel { color: var(--muted); white-space: nowrap; }
+.q-table .ref { color: var(--muted); font-size: 11px; }
+.q-expand { margin-top: 8px; border: 1px solid var(--line); background: #fff; color: var(--navy);
+  padding: 5px 14px; border-radius: 6px; font-family: inherit; font-size: 12.5px; cursor: pointer; }
+.q-note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; line-height: 1.45; }
+
+/* public build: model results only -- the "Actual" column (4th) of the data-flow tables is hidden */
+body.public #q-flow th:nth-child(4), body.public #q-flow td:nth-child(4),
+body.public #a-flow th:nth-child(4), body.public #a-flow td:nth-child(4) { display: none; }
