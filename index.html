@@ -7,7 +7,7 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261019e">
+<link rel="stylesheet" href="styles.css?v=20261117a">
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
@@ -35,7 +35,8 @@
   <div id="tab-nowcast" class="tab-panel active">
     <div class="card">
       <div class="card-title">Quarterly GDP growth: nowcast history and current reading
-        <span class="hint">drag the range slider, or use the buttons, to change the window</span></div>
+        <span class="hint">drag the range slider, or use the buttons, to change the window</span>
+        <button type="button" class="range-toggle" id="nowcast-yrange" title="The default range is 0 to 8 percent">Show full range</button></div>
       <div id="fig-nowcast" class="fig-tall"></div>
     </div>
 
@@ -156,6 +157,6 @@
     Institution benchmarks are collected manually.
   </div>
 </div>
-<script src="app.js?v=20261116a"></script>
+<script src="app.js?v=20261117b"></script>
 </body>
 </html>

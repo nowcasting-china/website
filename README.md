@@ -12,6 +12,10 @@ The dashboard shows:
 
 Results are updated at every data release. The site shows model results only; the released values of the indicators are not published here.
 
+## Archive of predictions
+
+The [`archive`](archive) folder holds the predictions for download: one file per model update with the backcast, the nowcast, the forecasts one to three quarters ahead and the annual rate, each with its median and quantiles, together with the backtest of the paper since December 2007. A new file is added at every update.
+
 ## Citation
 
 If you use the results or figures from this dashboard, please cite:

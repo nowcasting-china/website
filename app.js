@@ -159,8 +159,15 @@ function tabNowcast(D) {
       line: { color: weoCol, width: 2.8 },
       name: 'IMF WEO Q4/Q4 (Oct)' }); }
 
+  // Values axis: by default the narrow range NARROW_Y, which leaves the pandemic extremes
+  // (2020-21: GDP between -6.8 and 18.9) and the double-digit growth before 2012 off the chart
+  // so that recent years are readable; the button in the card title switches to the full
+  // range and back.
+  const NARROW_Y = [0, 8];
+  let yMode = 'narrow';
+
   const layout = Object.assign({}, LAYOUT, {
-    yaxis: { title: 'GDP growth, % YoY', zeroline: true },
+    yaxis: { title: 'GDP growth, % YoY', zeroline: true, range: NARROW_Y.slice() },
     xaxis: XTIME(),
     legend: { orientation: 'h', x: 0, y: -0.38, yanchor: 'top' },
     margin: { l: 55, r: 25, t: 10, b: 20 },
@@ -170,7 +177,16 @@ function tabNowcast(D) {
       font: { size: 14, color: COL.red }, arrowcolor: COL.red, arrowwidth: 1.4
     }]
   });
-  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG());
+  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG()).then(gd => {
+    const btn = document.getElementById('nowcast-yrange');
+    const label = () => { if (btn) { btn.textContent = yMode === 'narrow' ? 'Show full range' : 'Narrow range'; btn.setAttribute('aria-pressed', yMode === 'full'); } };
+    const apply = () => Plotly.relayout(gd, yMode === 'full' ? { 'yaxis.autorange': true } : { 'yaxis.range': NARROW_Y.slice() });
+    if (btn) btn.addEventListener('click', () => { yMode = yMode === 'narrow' ? 'full' : 'narrow'; label(); apply(); });
+    gd.on('plotly_relayout', e => {
+      if (e && e['yaxis.autorange'] === true && yMode !== 'full') { yMode = 'full'; label(); }   // the toolbar's "Reset values"
+    });
+    label();
+  });
 }
 
 /* ---------------- per-quarter section (NY Fed style) ---------------- */

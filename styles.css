@@ -109,3 +109,8 @@ body.public #a-flow th:nth-child(4), body.public #a-flow td:nth-child(4) { displ
 .faq-notation li { margin-bottom: 2px; }
 .inst-chip .mk { display: inline-block; flex: none; }
 .faq-cal td.approx { font-style: italic; font-weight: 400; }
+
+/* values-range switch in the title of the history chart */
+.range-toggle { float: right; font: inherit; font-size: 12px; font-weight: 500; padding: 3px 12px; border: 1px solid var(--navy);
+  border-radius: 999px; background: var(--card); color: var(--navy); cursor: pointer; }
+.range-toggle:hover, .range-toggle[aria-pressed="true"] { background: var(--navy); color: #fff; }
