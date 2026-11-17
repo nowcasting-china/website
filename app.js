@@ -71,6 +71,22 @@ const TIMECFG = () => ({ responsive: true, displaylogo: false,
     { name: 'Zoom out (values)', icon: Plotly.Icons.zoom_minus, click: yZoom(1 / 0.6) },
     { name: 'Reset values',      icon: Plotly.Icons.autoscale,  click: gd => Plotly.relayout(gd, { 'yaxis.autorange': true }) }
   ] });
+// Values axis of the two history charts (quarterly and annual): by default the narrow range
+// NARROW_Y, which leaves the pandemic extremes and the double-digit growth before 2012 off the
+// chart so that recent years are readable; the button in the card title (btnId) switches to
+// the full range and back.
+const NARROW_Y = [0, 8];
+const rangeToggle = (gd, btnId) => {
+  const btn = document.getElementById(btnId);
+  let mode = 'narrow';
+  const label = () => { if (btn) { btn.textContent = mode === 'narrow' ? 'Show full range' : 'Narrow range'; btn.setAttribute('aria-pressed', mode === 'full'); } };
+  const apply = () => Plotly.relayout(gd, mode === 'full' ? { 'yaxis.autorange': true } : { 'yaxis.range': NARROW_Y.slice() });
+  if (btn) btn.addEventListener('click', () => { mode = mode === 'narrow' ? 'full' : 'narrow'; label(); apply(); });
+  gd.on('plotly_relayout', e => {
+    if (e && e['yaxis.autorange'] === true && mode !== 'full') { mode = 'full'; label(); }   // the toolbar's "Reset values"
+  });
+  label();
+};
 
 fetch('data/dashboard.json?t=' + Date.now()).then(r => r.json()).then(D => {
   // public build (python/export_public.py): model results only, the released data values are
@@ -159,13 +175,6 @@ function tabNowcast(D) {
       line: { color: weoCol, width: 2.8 },
       name: 'IMF WEO Q4/Q4 (Oct)' }); }
 
-  // Values axis: by default the narrow range NARROW_Y, which leaves the pandemic extremes
-  // (2020-21: GDP between -6.8 and 18.9) and the double-digit growth before 2012 off the chart
-  // so that recent years are readable; the button in the card title switches to the full
-  // range and back.
-  const NARROW_Y = [0, 8];
-  let yMode = 'narrow';
-
   const layout = Object.assign({}, LAYOUT, {
     yaxis: { title: 'GDP growth, % YoY', zeroline: true, range: NARROW_Y.slice() },
     xaxis: XTIME(),
@@ -177,16 +186,7 @@ function tabNowcast(D) {
       font: { size: 14, color: COL.red }, arrowcolor: COL.red, arrowwidth: 1.4
     }]
   });
-  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG()).then(gd => {
-    const btn = document.getElementById('nowcast-yrange');
-    const label = () => { if (btn) { btn.textContent = yMode === 'narrow' ? 'Show full range' : 'Narrow range'; btn.setAttribute('aria-pressed', yMode === 'full'); } };
-    const apply = () => Plotly.relayout(gd, yMode === 'full' ? { 'yaxis.autorange': true } : { 'yaxis.range': NARROW_Y.slice() });
-    if (btn) btn.addEventListener('click', () => { yMode = yMode === 'narrow' ? 'full' : 'narrow'; label(); apply(); });
-    gd.on('plotly_relayout', e => {
-      if (e && e['yaxis.autorange'] === true && yMode !== 'full') { yMode = 'full'; label(); }   // the toolbar's "Reset values"
-    });
-    label();
-  });
+  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG()).then(gd => rangeToggle(gd, 'nowcast-yrange'));
 }
 
 /* ---------------- per-quarter section (NY Fed style) ---------------- */
@@ -483,7 +483,7 @@ function tabAnnual(D) {
     hovertemplate: '%{customdata[1]}<extra>Govt. target %{customdata[0]}</extra>' });
 
   const layout = Object.assign({}, LAYOUT, {
-    yaxis: { title: 'annual GDP growth, %' },
+    yaxis: { title: 'annual GDP growth, %', range: NARROW_Y.slice() },
     xaxis: XTIME(),
     legend: { orientation: 'h', x: 0, y: -0.38, yanchor: 'top' },
     margin: { l: 55, r: 25, t: 10, b: 20 },
@@ -497,6 +497,7 @@ function tabAnnual(D) {
     }] : [])
   });
   Plotly.newPlot('fig-annual', tr, layout, TIMECFG()).then(gd => {
+    rangeToggle(gd, 'annual-yrange');
     const box = document.getElementById('inst-controls');
     box.innerHTML = '';
     // each chip shows the marker the chart uses for that institution (shape, colour, outline)
