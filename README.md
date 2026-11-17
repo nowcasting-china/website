@@ -37,5 +37,4 @@ NBS, MOT, S&P Global via Haver Analytics; retail sales, non-manufacturing PMI an
 
 ## Declaration on the use of generative AI
 
-The code for this website and its update pipeline was written with the assistance of Claude Code, a generative AI coding tool developed by Anthropic. This covers the scripts that check for new data releases, run the model at each release, export the results, build the dashboard and publish it to this repository. The econometric model, its specification and priors, the choice of data, and the interpretation of the results are the work of the authors. All AI-assisted suggestions were carefully
-reviewed, and we take full responsibility for the final content and accuracy of this site.
+The code for this website and its update pipeline was written with the assistance of Claude Code, a generative AI coding tool developed by Anthropic. The econometric model, its specification and priors, the choice of data, and the interpretation of the results are the work of the authors. All AI-assisted suggestions were carefully reviewed, and we take full responsibility for the final content and accuracy of this site.
