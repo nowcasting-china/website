@@ -186,6 +186,8 @@ const STACK_ORDER = ['GDP', 'Industrial production', 'Electricity production', '
   'NBS PMI', 'Non-mfg PMI', 'Markit PMI', 'Business climate Index', 'Revisions & other'];
 const fmtD = s => { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
 const fmtDY = s => { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); };
+// an impact in pp with two decimals for the hover boxes (never '-0.00')
+const pp2 = v => { const s = (Math.round((v || 0) * 100) / 100).toFixed(2); return s === '-0.00' ? '0.00' : s; };
 const fmtRef = r => { const [y, m] = r.split('-'); return new Date(+y, +m - 1, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); };
 const signed = v => (v > 0 ? '+' : '') + v.toFixed(2);
 let Q_EXPANDED = false;
@@ -288,7 +290,7 @@ function showQuarter(qq) {
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
     tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray },
-              hovertemplate: l + ': %{y:+.3f} pp<extra></extra>' });
+              customdata: byLab[l].map(pp2), hovertemplate: l + ': %{customdata} pp<extra></extra>' });
   });
   tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2',
             line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy }, customdata: dates,
@@ -614,7 +616,7 @@ function showYear(yy) {
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
     tr.push({ x: cats, y: byLab[l], type: 'bar', name: l, marker: { color: LABEL_COL[l] || COL.gray },
-              hovertemplate: l + ': %{y:+.3f} pp<extra></extra>' });
+              customdata: byLab[l].map(pp2), hovertemplate: l + ': %{customdata} pp<extra></extra>' });
   });
   tr.push({ x: cats, y: P.map(p => p.med), mode: 'lines+markers', name: yy.label + ' annual rate', yaxis: 'y2',
             line: { color: COL.navy, width: 2.2 }, marker: { size: 5, color: COL.navy },
