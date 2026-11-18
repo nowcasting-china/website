@@ -10,7 +10,7 @@ The dashboard shows:
 - **Annual rate**: the model's estimate of annual GDP growth with its predictive density, compared with the forecasts of the IMF, OECD, Asian Development Bank and World Bank and with the government growth target; for each year, the impact of each data release on the annual rate.
 - **FAQ**: the data used, the model's equations, and the release calendar.
 
-Results are updated at every data release. The site shows model results only; the released values of the indicators are not published here.
+Results are updated at every data release. For each release, the data-flow tables show the released value, the model's forecast of it, the news (the difference between the two), its weight and its impact on the nowcast.
 
 ## Archive of predictions
 

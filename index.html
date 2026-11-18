@@ -7,7 +7,7 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261118g">
+<link rel="stylesheet" href="styles.css?v=20261118h">
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
@@ -163,7 +163,7 @@
       <div class="faq-math">
         \[ \mathrm{impact}_j = \frac{1}{G} \sum_{g=1}^{G} w_j^{(g)} \, \nu_j^{(g)} \]
       </div>
-      <p>The tables report the average news, the average weight and the impact. The impact is an average of products, so it is close to, but not exactly, the product of the two columns; for a release with a very small weight the two can differ in sign.</p>
+      <p>The tables report the released value ("Actual"), the model's forecast of it, the average news (the difference between the two), the average weight and the impact. The impact is an average of products, so it is close to, but not exactly, the product of the two columns; for a release with a very small weight the two can differ in sign.</p>
       <p><b>Outliers.</b> When the model reads a release as an outlier, the outlier component is removed before the news is computed. Such a release carries little news, as it does in the nowcast itself.</p>
       <p><b>Revisions and other.</b> The impacts account for the change that comes from the new releases. The nowcast also changes for other reasons: the model is re-estimated at every update, past data are revised, and the published nowcast is the median of the predictive distribution while the decomposition applies to its mean. These are grouped in "revisions &amp; other", computed as a remainder:</p>
       <div class="faq-math">
@@ -185,6 +185,6 @@
     Institution benchmarks are collected manually.
   </div>
 </div>
-<script src="app.js?v=20261118g"></script>
+<script src="app.js?v=20261118h"></script>
 </body>
 </html>

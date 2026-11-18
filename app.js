@@ -174,8 +174,8 @@ const tgtText = g => g.type === 'range' ? `${g.lo}–${g.hi}% (range)`
                    : g.type === 'floor' ? `above ${g.v}%` : `around ${g.v}%`;
 
 fetch('data/dashboard.json?t=' + Date.now()).then(r => r.json()).then(D => {
-  // public build (python/export_public.py): model results only, the released data values are
-  // not in the file; the "Actual" column of the data-flow tables is hidden (styles.css)
+  // public build (python/export_public.py): D.public is set; whether the released values of the
+  // indicators are in the file depends on public.include_releases (see flowHTML)
   DASH = D;
   if (D.public) { IS_PUBLIC = true; document.body.classList.add('public'); }
   if (D.paper) { const pb = document.getElementById('paper-btn'); if (pb) { pb.href = D.paper; pb.hidden = false; } }
@@ -370,10 +370,11 @@ function drawDensity(obj, i, o) {
 }
 // The data-flow table of both sections, with the whole algebra of the news on every release row:
 // actual and model forecast, news = actual - forecast, weight, impact (the posterior mean of
-// weight x news).  The public build has the actual of the GDP rows only (gdp_official: the NBS
-// number, shown elsewhere on the page; the release values of the other series are vendor data, and
-// forecast = actual - news, so the two are left out together); its tables get the two columns when
-// one of the listed rows has them.  The row of an update (bold date) carries the change in the
+// weight x news).  The public build has the same columns since public.include_releases is on
+// (pipeline_config.json, Wei's decision of 18 Nov 2026).  With that switch off its file has the
+// actual of the GDP rows only (gdp_official: the NBS number; the release values of the other
+// series are vendor data, and forecast = actual - news, so the two are left out together): its
+// tables then get the two columns when one of the listed rows has them, and a line saying so.  The row of an update (bold date) carries the change in the
 // estimate since the previous update, which the rows below it add up to, and the new level; the
 // rows of its releases carry their release date in the same first column.
 //   P     the path, oldest update first;  idx  the updates to list, in display order
@@ -420,7 +421,8 @@ function flowHTML(P, idx, o) {
     h += `<tr class="q-update q-prev"><td>${fmtD(pv.date)}</td><td class="ref">previous update</td>${blank(NC)}` +
          `<td class="num">${pv.med.toFixed(2)}</td></tr>`;
   }
-  if (IS_PUBLIC && AF) {
+  // only when the public file was written without the release values (public.include_releases off)
+  if (IS_PUBLIC && AF && idx.some(i => P[i].items.some(it => actOf(it) == null))) {
     h += `<tr class="q-foot"><td></td><td class="ref" colspan="${NC + 2}">Actual and forecast are shown for GDP (official NBS number). ` +
          'The release values of the other series are licensed data.</td></tr>';
   }
