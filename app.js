@@ -124,6 +124,30 @@ const rangeToggle = (gd, btnId) => {
   label(); apply();
 };
 
+// The hover text is written on a line ABOVE the chart, never on the chart itself (Plotly's own box
+// follows the mouse and covers the lines).  A trace that reports carries hoverinfo 'none' (no box;
+// the hover events and the vertical marker line stay) and its text per point in customdata; meta
+// 'upd' marks the model's line, listed first.  hoverLine(gd) is called after every newPlot.
+const HOVER_HINT = 'move the mouse over the chart to read the values';
+const hoverLine = gd => {
+  let el = gd.previousElementSibling;
+  if (!el || !el.classList.contains('hover-line')) {
+    el = document.createElement('div');  el.className = 'hover-line';
+    gd.parentNode.insertBefore(el, gd);
+  }
+  const idle = () => { el.textContent = HOVER_HINT; el.classList.add('idle'); };
+  idle();
+  gd.on('plotly_hover', ev => {
+    const pts = ((ev && ev.points) || []).filter(p => typeof p.customdata === 'string' && p.customdata);
+    if (!pts.length) return;
+    const rank = p => p.data.meta === 'upd' ? 0 : 1;
+    pts.sort((a, b) => rank(a) - rank(b) || a.curveNumber - b.curveNumber);
+    el.textContent = '';  el.classList.remove('idle');
+    pts.forEach(p => { const s = document.createElement('span'); s.textContent = p.customdata; el.appendChild(s); });
+  });
+  gd.on('plotly_unhover', idle);
+};
+
 // ---- pieces shared by the charts: institution markers, government target ----
 let IS_PUBLIC = false, DASH = null;
 // institutions, paper markers: IMF triangle / OECD diamond / ADB square / WB circle
@@ -197,20 +221,24 @@ document.querySelectorAll('.tab-button').forEach(btn => {
 
 function tabNowcast(D) {
   const ev = D.eval, wk = D.weekly, tr = [];
+  const nowTxt = d => d.med == null ? '' : `${d.y} Q${d.q}: ${d.med.toFixed(2)}% (update ${fmtDY(d.date)})`;
   tr.push({ x: ev.map(d => d.date), y: ev.map(d => d.hi), mode: 'lines',
     line: { width: 0 }, hoverinfo: 'skip', showlegend: false });
   tr.push({ x: ev.map(d => d.date), y: ev.map(d => d.lo), mode: 'lines',
     line: { width: 0 }, fill: 'tonexty', fillcolor: COL.band,
     hoverinfo: 'skip', name: '68% band' });
   tr.push({ x: ev.map(d => d.date), y: ev.map(d => d.med), mode: 'lines',
-    line: { color: COL.navy, width: 2.4 }, name: 'Nowcast (evaluation)' });
+    line: { color: COL.navy, width: 2.4 }, name: 'Nowcast (evaluation)',
+    // hover lines read "2026 Q3: 4.30% (update Aug 3, 2026)", on the line above the chart (hoverLine)
+    hoverinfo: 'none', meta: 'upd', customdata: ev.map(nowTxt) });
   tr.push({ x: D.realized.map(d => qDate(d.y, d.q)), y: D.realized.map(d => d.v),
     mode: 'lines+markers', line: { color: COL.gray, width: 2.0, shape: 'hv' },
-    marker: { size: 5 }, name: 'Realized GDP' });
+    marker: { size: 5 }, name: 'Realized GDP', hoverinfo: 'none',
+    customdata: D.realized.map(d => `Official GDP ${d.y} Q${d.q}: ${d.v.toFixed(1)}%`) });
   if (wk.length) {
     tr.push({ x: wk.map(d => d.date), y: wk.map(d => d.med), mode: 'lines+markers',
       line: { color: COL.red, width: 2.2, dash: 'dot' }, marker: { size: 6 },
-      name: 'Nowcast (weekly updates)' });
+      name: 'Nowcast (weekly updates)', hoverinfo: 'none', meta: 'upd', customdata: wk.map(nowTxt) });
   }
   const last = wk.length ? wk[wk.length - 1] : ev[ev.length - 1];
   tr.push({ x: [last.date], y: [last.med], mode: 'markers',
@@ -229,11 +257,11 @@ function tabNowcast(D) {
   });
   if (weoApr.length) { const g = weoSeg(weoApr);
     tr.push({ x: g.x, y: g.y, mode: 'lines', connectgaps: false,
-      line: { color: weoCol, width: 2.8, dash: 'dash' },
+      line: { color: weoCol, width: 2.8, dash: 'dash' }, hoverinfo: 'skip',   // hover: data and nowcast only
       name: 'IMF WEO Q4/Q4 (Apr)' }); }
   if (weoOct.length) { const g = weoSeg(weoOct);
     tr.push({ x: g.x, y: g.y, mode: 'lines', connectgaps: false,
-      line: { color: weoCol, width: 2.8 },
+      line: { color: weoCol, width: 2.8 }, hoverinfo: 'skip',
       name: 'IMF WEO Q4/Q4 (Oct)' }); }
 
   const layout = Object.assign({}, LAYOUT, {
@@ -247,7 +275,7 @@ function tabNowcast(D) {
       font: { size: 14, color: COL.red }, arrowcolor: COL.red, arrowwidth: 1.4
     }]
   });
-  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG()).then(gd => rangeToggle(gd, 'nowcast-yrange'));
+  Plotly.newPlot('fig-nowcast', tr, layout, TIMECFG()).then(gd => { rangeToggle(gd, 'nowcast-yrange'); hoverLine(gd); });
 }
 
 /* ---------------- per-quarter section (NY Fed style) ---------------- */
@@ -312,6 +340,8 @@ function drawDensity(obj, i, o) {
   if (!dt) {
     Plotly.purge(el);
     el.innerHTML = '<p style="color:#6b7482;padding:12px">No density stored for this update.</p>';
+    const hl = el.previousElementSibling;
+    if (hl && hl.classList.contains('hover-line')) hl.textContent = '';
     return;
   }
   if (!el.querySelector('.plot-container')) el.innerHTML = '';
@@ -329,27 +359,32 @@ function drawDensity(obj, i, o) {
                       xanchor: refLeft ? 'right' : 'left', yanchor: 'bottom', yshift: 2,
                       xshift: refLeft ? -3 : 3, font: { color: COL.gray, size: 11 } });
   Plotly.newPlot(el, [{ x: dt.x, y: dt.pdf, mode: 'lines', fill: 'tozeroy', fillcolor: 'rgba(31,78,156,0.18)',
-                        line: { color: COL.navy, width: 2 }, name: 'density', hovertemplate: '%{x:.2f}%: %{y:.3f}<extra></extra>' }],
+                        line: { color: COL.navy, width: 2 }, name: 'density', hoverinfo: 'none',
+                        customdata: dt.x.map((x, k) => `${x.toFixed(2)}%: density ${dt.pdf[k].toFixed(3)}`) }],
     Object.assign({}, LAYOUT, {
       showlegend: false, shapes, margin: { l: 45, r: 15, t: 24, b: 35 }, hovermode: 'x',
       xaxis: Object.assign({ title: o.xtitle, zeroline: false }, o.range ? { range: o.range.slice() } : {}),
       yaxis: { title: 'density', rangemode: 'tozero' }, annotations: ann
-    }), { responsive: true, displaylogo: false });
+    }), { responsive: true, displaylogo: false }).then(hoverLine);
 }
 // The data-flow table of both sections, with the whole algebra of the news on every release row:
-// actual and model forecast (local build only: forecast = actual - news, so the two are left out of
-// the public build together), news = actual - forecast, weight, impact (the posterior mean of
-// weight x news).  The row of an update (bold date) carries the change in the estimate since the
-// previous update, which the rows below it add up to, and the new level; the rows of its releases
-// carry their release date in the same first column.
+// actual and model forecast, news = actual - forecast, weight, impact (the posterior mean of
+// weight x news).  The public build has the actual of the GDP rows only (gdp_official: the NBS
+// number, shown elsewhere on the page; the release values of the other series are vendor data, and
+// forecast = actual - news, so the two are left out together); its tables get the two columns when
+// one of the listed rows has them.  The row of an update (bold date) carries the change in the
+// estimate since the previous update, which the rows below it add up to, and the new level; the
+// rows of its releases carry their release date in the same first column.
 //   P     the path, oldest update first;  idx  the updates to list, in display order
 //   o     hdrImpact, hdrLevel (column titles), tag(p), label(it), revLabel(p), empty(p), borrowed,
 //         sel (true: one picked update, followed by the row of the update before it)
+const actOf = it => it.actual != null ? it.actual : (it.gdp_official != null ? it.gdp_official : null);
 function flowHTML(P, idx, o) {
-  const NC = IS_PUBLIC ? 3 : 5;                      // numeric columns between the series and the level
+  const AF = !IS_PUBLIC || idx.some(i => P[i].items.some(it => actOf(it) != null));   // actual and forecast columns
+  const NC = AF ? 5 : 3;                             // numeric columns between the series and the level
   const blank = n => '<td></td>'.repeat(n);
   let h = '<thead><tr><th>Update,<br>release</th><th>Data series</th>' +
-          (IS_PUBLIC ? '' : '<th class="num">Actual</th><th class="num">Forecast</th>') +
+          (AF ? '<th class="num">Actual</th><th class="num">Forecast</th>' : '') +
           '<th class="num">News</th><th class="num">Weight</th>' +
           `<th class="num">${o.hdrImpact}</th><th class="num">${o.hdrLevel}</th></tr></thead><tbody>`;
   idx.forEach(i => {
@@ -358,10 +393,11 @@ function flowHTML(P, idx, o) {
          `<td class="${chg == null ? 'num' : clsPP(chg)}">${chg == null ? '' : signed(chg)}</td>` +
          `<td class="num">${p.med.toFixed(2)}</td></tr>`;
     p.items.forEach(it => {
+      const act = actOf(it);
       h += `<tr><td class="rel">${it.release ? fmtD(it.release) : ''}</td><td>${o.label(it)}</td>` +
-           (IS_PUBLIC ? '' :
-             `<td class="num">${it.actual == null ? '' : it.actual.toFixed(2)}</td>` +
-             `<td class="num">${it.actual == null || it.news == null ? '' : (it.actual - it.news).toFixed(2)}</td>`) +
+           (AF ?
+             `<td class="num">${act == null ? '' : act.toFixed(2)}</td>` +
+             `<td class="num">${act == null || it.news == null ? '' : (act - it.news).toFixed(2)}</td>` : '') +
            `<td class="num">${it.news == null ? '' : signed(it.news)}</td>` +
            `<td class="num">${fmtW(it.weight)}</td>` +
            `<td class="${it.impact == null ? 'num ref' : clsPP(it.impact)}">${it.impact == null ? '–' : signed(it.impact)}</td><td></td></tr>`;
@@ -383,11 +419,18 @@ function flowHTML(P, idx, o) {
     h += `<tr class="q-update q-prev"><td>${fmtD(pv.date)}</td><td class="ref">previous update</td>${blank(NC)}` +
          `<td class="num">${pv.med.toFixed(2)}</td></tr>`;
   }
+  if (IS_PUBLIC && AF) {
+    h += `<tr class="q-foot"><td></td><td class="ref" colspan="${NC + 2}">Actual and forecast are shown for GDP (official NBS number). ` +
+         'The release values of the other series are licensed data.</td></tr>';
+  }
   return h + '</tbody>';
 }
 // the HTML legend below an impact chart (never collides with the axis, any width)
 const lgBar = (col, name) => `<span class="item"><span class="sq" style="background:${col}"></span>${name}</span>`;
 const lgLine = (col, dashed, name) => `<span class="item"><span class="ln" style="border-color:${col};border-style:${dashed ? 'dashed' : 'solid'}"></span>${name}</span>`;
+// an invisible trace that puts the official number in the hover box of every update of an impact chart
+const hoverCarrier = (xb, v, name) => ({ x: xb, y: xb.map(() => v), mode: 'lines', yaxis: 'y2', line: { width: 0 }, opacity: 0,
+  showlegend: false, name, hoverinfo: 'none', customdata: xb.map(() => `${name}: ${v.toFixed(1)}%`) });
 // the ring that marks the picked update on an impact chart (its position is set by restyle)
 const selTrace = () => ({ x: [null], y: [null], yaxis: 'y2', mode: 'markers', hoverinfo: 'skip', showlegend: false,
   marker: { size: 14, color: 'rgba(0,0,0,0)', line: { color: COL.red, width: 2.5 } } });
@@ -458,17 +501,19 @@ function showQuarter(qq) {
   const tr = [], lg = [];
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
-    tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray }, meta: 'upd',
-              customdata: byLab[l].map(pp2), hovertemplate: l + ': %{customdata} pp<extra></extra>' });
+    // no hover on the bars: the box carries the nowcast and the official number only; the impacts
+    // of an update are in the table (a click on the update lists them)
+    tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray }, hoverinfo: 'skip' });
     lg.push(lgBar(LABEL_COL[l] || COL.gray, l));
   });
   tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2', meta: 'upd',
-            line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy }, customdata: dates,
-            hovertemplate: 'update %{customdata}: %{y:.2f}%<extra>' + lab + '</extra>' });
+            line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy }, hoverinfo: 'none',
+            customdata: P.map((p, i) => `${lab}: ${p.med.toFixed(2)}% (update ${dates[i]})`) });
   lg.push(lgLine(COL.navy, false, lab + ' nowcast'));
   if (qq.gdp) {
     tr.push({ x: [xFirst, xLast], y: [qq.gdp.v, qq.gdp.v], mode: 'lines', name: 'Official GDP', yaxis: 'y2',
               line: { color: COL.gray, width: 1.5, dash: 'dash' }, hoverinfo: 'skip' });
+    tr.push(hoverCarrier(xb, qq.gdp.v, 'Official GDP'));
     lg.push(lgLine(COL.gray, true, 'Official GDP'));
   }
   tr.push(selTrace());
@@ -487,6 +532,7 @@ function showQuarter(qq) {
               range: lineRange(P.map(p => p.med).concat(qq.gdp ? [qq.gdp.v] : [])) }
   }), { responsive: true, displaylogo: false }).then(gd => {
     if (Q_CUR !== qq) return;
+    hoverLine(gd);
     // a click on an update (its point or its bars) picks it: its density above, the decomposition
     // of the change since the previous update in the table; a second click on it goes back
     Q_PICK = i => {
@@ -553,15 +599,17 @@ function tabAnnual(D) {
   if (offF.length) { const g = yrSeg(offF, d => d.final);
     tr.push({ x: g.x, y: g.y, mode: 'lines', connectgaps: false, hoverinfo: 'skip',
       line: { color: '#6E7684', width: 2.0 }, name: 'Annual GDP [Final]' }); }
+  // the hover box carries two things only, the data and the nowcast: one official number per year
+  // (the final one when it is out, else the preliminary one) and the model's median
   const A0 = D.annual_hist || [];
-  [['prelim', 'preliminary'], ['final', 'final']].forEach(([k, tag]) => {
-    const byYear = {};  off.forEach(d => { if (d[k] != null) byYear[d.year] = d[k]; });
-    const pts = A0.map(d => ({ x: d.date, y: byYear[d.date.slice(0, 4)] })).filter(p => p.y != null);
-    if (pts.length) tr.push({ x: pts.map(p => p.x), y: pts.map(p => p.y), mode: 'lines',
-      line: { width: 0 }, opacity: 0, showlegend: false,
-      text: pts.map(p => `${p.x.slice(0, 4)} official annual GDP (${tag})`),
-      hovertemplate: '%{y:.2f}%<extra>%{text}</extra>' });
-  });
+  {
+    const byYear = {};
+    off.forEach(d => { const fin = d.final != null; if (fin || d.prelim != null) byYear[d.year] = { v: fin ? d.final : d.prelim, tag: fin ? 'final' : 'preliminary' }; });
+    const pts = A0.map(d => ({ x: d.date, o: byYear[d.date.slice(0, 4)] })).filter(p => p.o);
+    if (pts.length) tr.push({ x: pts.map(p => p.x), y: pts.map(p => p.o.v), mode: 'lines',
+      line: { width: 0 }, opacity: 0, showlegend: false, hoverinfo: 'none',
+      customdata: pts.map(p => `${p.x.slice(0, 4)} official annual GDP (${p.o.tag}): ${p.o.v.toFixed(2)}%`) });
+  }
 
   const A = D.annual_hist || [];
   if (A.length) {
@@ -586,11 +634,12 @@ function tabAnnual(D) {
       tr.push({ x: X, y: S.map(d => d.med), mode: 'lines', line: { color: COL.navy, width: 2.4 },
         name: 'Model-implied annual rate', showlegend: yr === years[0], hoverinfo: 'skip' });
     });
-    // one continuous, invisible carrier per percentile: exactly one hover value each
-    [['med', 'median'], ['q16', '16th pct'], ['q84', '84th pct'], ['q5', '5th pct'], ['q95', '95th pct']]
-      .forEach(([k, name]) => tr.push({ x: A.map(d => d.date), y: A.map(d => d[k]), mode: 'lines',
-        line: { width: 0 }, opacity: 0, showlegend: false, name,
-        hovertemplate: '%{y:.2f}%<extra>' + name + '</extra>' }));
+    // one continuous, invisible carrier for the median: exactly one hover value (the bands are
+    // read off the chart; the percentiles of every update are in the archive)
+    tr.push({ x: A.map(d => d.date), y: A.map(d => d.med), mode: 'lines',
+      line: { width: 0 }, opacity: 0, showlegend: false, name: 'Model-implied annual rate',
+      hoverinfo: 'none', meta: 'upd',
+      customdata: A.map(d => d.med == null ? '' : `${d.date.slice(0, 4)}: ${d.med.toFixed(2)}% (update ${fmtDY(d.date)})`) });
     // legend entries for the bands (the fills above stay unlabeled)
     tr.push({ x: [null], y: [null], mode: 'lines', line: { color: 'rgba(31,78,156,0.16)', width: 10 }, name: '16-84% band', hoverinfo: 'skip' });
     tr.push({ x: [null], y: [null], mode: 'lines', line: { color: 'rgba(31,78,156,0.08)', width: 10 }, name: '5-95% band', hoverinfo: 'skip' });
@@ -599,7 +648,8 @@ function tabAnnual(D) {
   if (wk.length) {
     tr.push({ x: wk.map(d => d.date), y: wk.map(d => d.ann_med), mode: 'lines+markers',
       line: { color: COL.red, width: 2.2, dash: 'dot' }, marker: { size: 6 },
-      name: 'Weekly updates' });
+      name: 'Weekly updates', hoverinfo: 'none', meta: 'upd',
+      customdata: wk.map(d => `${d.date.slice(0, 4)}: ${d.ann_med.toFixed(2)}% (update ${fmtDY(d.date)})`) });
     const last = wk[wk.length - 1];
     tr.push({ x: [last.date], y: [last.ann_med], mode: 'markers',
       marker: { symbol: 'square', size: 12, color: COL.red, line: { color: '#fff', width: 1.5 } },
@@ -610,30 +660,24 @@ function tabAnnual(D) {
   Object.keys(INST).forEach(k => {
     const s = (D.institutions || []).filter(d => d.inst === k);
     if (!s.length) return;
-    tr.push({ x: s.map(d => d.date), y: s.map(d => d.v), mode: 'markers',
+    tr.push({ x: s.map(d => d.date), y: s.map(d => d.v), mode: 'markers', hoverinfo: 'skip',
       marker: { symbol: INST[k].sym, size: 10, color: INST[k].col, opacity: 0.85,
                 line: { color: '#000', width: 0.8 } }, name: INST[k].label });
   });
 
-  // government targets: star (point), vertical bar (range), star (floor)
+  // government targets: star (point), vertical bar (range), star (floor); like the institutions,
+  // they are left out of the hover box (data and nowcast only)
   const gov = D.gov_targets || [], govCol = GOV_COL;
   const gp = gov.filter(g => g.type !== 'range');
-  // hover text states the target as announced (tgtText)
-  if (gp.length) tr.push({ x: gp.map(g => g.date), y: gp.map(g => g.v), mode: 'markers',
+  if (gp.length) tr.push({ x: gp.map(g => g.date), y: gp.map(g => g.v), mode: 'markers', hoverinfo: 'skip',
     marker: { symbol: 'star', size: 10, color: govCol, opacity: 0.75,
-              line: { color: '#000', width: 0.5 } }, name: 'Govt. target',
-    customdata: gp.map(g => [g.year, tgtText(g)]),
-    hovertemplate: '%{customdata[1]}<extra>Govt. target %{customdata[0]}</extra>' });
+              line: { color: '#000', width: 0.5 } }, name: 'Govt. target' });
   const gr = gov.filter(g => g.type === 'range');
   if (gr.length) tr.push({
     x: gr.flatMap(g => [g.date, g.date, null]),
     y: gr.flatMap(g => [g.lo, g.hi, null]),
-    mode: 'lines', connectgaps: false,
-    line: { color: govCol, width: 4 }, opacity: 0.75, name: 'Govt. target (range)',
-    // the two end points share one date: hover on the first only, with the range text
-    customdata: gr.flatMap(g => [[g.year, tgtText(g)], [g.year, tgtText(g)], [g.year, '']]),
-    hoverinfo: gr.flatMap(() => ['all', 'skip', 'skip']),
-    hovertemplate: '%{customdata[1]}<extra>Govt. target %{customdata[0]}</extra>' });
+    mode: 'lines', connectgaps: false, hoverinfo: 'skip',
+    line: { color: govCol, width: 4 }, opacity: 0.75, name: 'Govt. target (range)' });
 
   const layout = Object.assign({}, LAYOUT, {
     yaxis: { title: 'annual GDP growth, %', range: [NARROW_FLOOR, 8] },   // rangeToggle sets the ceiling
@@ -651,6 +695,7 @@ function tabAnnual(D) {
   });
   Plotly.newPlot('fig-annual', tr, layout, TIMECFG()).then(gd => {
     rangeToggle(gd, 'annual-yrange');
+    hoverLine(gd);
     const box = document.getElementById('inst-controls');
     box.innerHTML = '';
     // each chip shows the marker the chart uses for that institution (shape, colour, outline)
@@ -763,16 +808,16 @@ function showYear(yy) {
   const tr = [], lg = [], lvl = P.map(p => p.med);
   Object.keys(byLab).forEach(l => {
     if (!byLab[l].some(v => Math.abs(v) > 1e-6)) return;
-    tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray }, meta: 'upd',
-              customdata: byLab[l].map(pp2), hovertemplate: l + ': %{customdata} pp<extra></extra>' });
+    // no hover on the bars, the target or the institutions: the box carries the annual rate and the
+    // official number only (the impacts are in the table, the benchmarks in the legend)
+    tr.push({ x: xb, y: byLab[l], type: 'bar', width: BARW, name: l, marker: { color: LABEL_COL[l] || COL.gray }, hoverinfo: 'skip' });
     lg.push(lgBar(LABEL_COL[l] || COL.gray, l));
   });
   // government target of the year, from the day it was announced: a line (point or floor) or a band (range)
   const g = ((DASH && DASH.gov_targets) || []).find(t => t.year === Y);
   if (g) {
     const gx = [g.date, xEnd], gl = { color: GOV_COL, width: 1.5, dash: 'dash' };
-    const ghov = { customdata: [fmtD(g.date), ''], hoverinfo: ['all', 'skip'],
-                   hovertemplate: tgtText(g) + ', announced %{customdata}<extra>Govt. target</extra>' };
+    const ghov = { hoverinfo: 'skip' };
     if (g.type === 'range') {
       tr.push(Object.assign({ x: gx, y: [g.lo, g.lo], mode: 'lines', yaxis: 'y2', line: gl, name: 'Govt. target' }, ghov));
       tr.push({ x: gx, y: [g.hi, g.hi], mode: 'lines', yaxis: 'y2', line: gl, fill: 'tonexty', fillcolor: 'rgba(191,20,38,0.07)',
@@ -785,39 +830,51 @@ function showYear(yy) {
     lg.push(lgLine(GOV_COL, true, 'Govt. target: ' + tgtText(g)));
   }
   tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: yy.label + ' annual rate', yaxis: 'y2', meta: 'upd',
-            line: { color: COL.navy, width: 2.2 }, marker: { size: 5, color: COL.navy }, customdata: dates,
-            hovertemplate: 'update %{customdata}: %{y:.2f}%<extra>' + yy.label + '</extra>' });
+            line: { color: COL.navy, width: 2.2 }, marker: { size: 5, color: COL.navy }, hoverinfo: 'none',
+            customdata: P.map((p, i) => `${yy.label}: ${p.med.toFixed(2)}% (update ${dates[i]})`) });
   lg.push(lgLine(COL.navy, false, yy.label + ' annual rate'));
   if (off) {
     tr.push({ x: [xFirst, xLast], y: [off.v, off.v], mode: 'lines', yaxis: 'y2',
               name: 'Official annual GDP', line: { color: COL.gray, width: 1.5, dash: 'dash' }, hoverinfo: 'skip' });
+    tr.push(hoverCarrier(xb, off.v, 'Official annual GDP (' + off.kind + ')'));
     lg.push(lgLine(COL.gray, true, 'Official annual GDP'));
     lvl.push(off.v);
   }
-  // institutions: their forecasts for this year, published during the year
+  // institutions: their forecasts for this year, published during the year.  Their legend is the
+  // chart's own, in its top right corner (the other entries stay in the legend below the chart)
+  let nInst = 0;
   Object.keys(INST).forEach(k => {
     const f = ((DASH && DASH.institutions) || []).filter(d => d.inst === k && d.year === Y);
     if (!f.length) return;
-    tr.push({ x: f.map(d => d.date), y: f.map(d => d.v), mode: 'markers', yaxis: 'y2', name: INST[k].label,
-              marker: { symbol: INST[k].sym, size: 9, color: INST[k].col, opacity: 0.9, line: { color: '#000', width: 0.8 } },
-              customdata: f.map(d => fmtD(d.date)),
-              hovertemplate: 'published %{customdata}: %{y:.1f}%<extra>' + INST[k].label + '</extra>' });
-    lg.push(`<span class="item">${markSvg(INST[k].sym, INST[k].col)}${INST[k].label}</span>`);
+    tr.push({ x: f.map(d => d.date), y: f.map(d => d.v), mode: 'markers', yaxis: 'y2', name: INST[k].label, hoverinfo: 'skip',
+              showlegend: true,
+              marker: { symbol: INST[k].sym, size: 9, color: INST[k].col, opacity: 0.9, line: { color: '#000', width: 0.8 } } });
+    nInst++;
     f.forEach(d => lvl.push(d.v));
   });
   tr.push(selTrace());
   const selIdx = tr.length - 1;
+  tr.forEach(t => { if (t.showlegend !== true) t.showlegend = false; });
+  // the corner legend gets a strip of its own at the top of the panel (LG_ROOM of its height, above
+  // the highest level drawn; the bars end lower), so that it never covers the lines or the markers;
+  // the larger top margin keeps Plotly's toolbar off it
+  const LG_ROOM = 0.12, y2r = lineRange(lvl);
+  if (nInst && y2r) y2r[1] += LG_ROOM / (1 - LG_ROOM) * (y2r[1] - y2r[0]);
   // bars on their own symmetric axis (left, pp); the annual rate and the benchmarks on the right axis (percent)
   Plotly.newPlot('fig-a-impact', tr, Object.assign({}, LAYOUT, {
-    barmode: 'relative', hovermode: 'x unified', showlegend: false,
-    margin: { l: 55, r: 55, t: 15, b: 60 },
+    barmode: 'relative', hovermode: 'x unified', showlegend: nInst > 0,
+    // traceorder: Plotly would reverse the entries in a year whose target is a band (a filled trace)
+    legend: { orientation: 'h', x: 1, xanchor: 'right', y: 1, yanchor: 'top', font: { size: 10.5 }, traceorder: 'normal',
+              bgcolor: 'rgba(0,0,0,0)', itemclick: false, itemdoubleclick: false },
+    margin: { l: 55, r: 55, t: nInst ? 30 : 15, b: 60 },
     xaxis: { type: 'date', range: [xFirst, xLast], dtick: 'M1', tick0: `${Y}-01-01`, tickformat: '%b', ticklabelmode: 'period',
              title: { text: 'model update, ' + Y, standoff: 12 }, automargin: true, tickfont: { size: 11 }, hoverformat: ' ' },
     yaxis: { title: 'impact, pp', zeroline: true, zerolinecolor: '#999', range: barRange(byLab), fixedrange: false },
     yaxis2: { title: { text: 'annual rate, percent', font: { color: COL.navy } }, tickfont: { color: COL.navy },
-              overlaying: 'y', side: 'right', showgrid: false, zeroline: false, range: lineRange(lvl) }
+              overlaying: 'y', side: 'right', showgrid: false, zeroline: false, range: y2r }
   }), { responsive: true, displaylogo: false }).then(gd => {
     if (Y_CUR !== yy) return;
+    hoverLine(gd);
     // a click on an update (its point or its bars) picks it: its density above, the decomposition
     // of the change since the previous update in the table; a second click on it goes back
     Y_PICK = i => {
