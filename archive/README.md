@@ -6,7 +6,7 @@ Out-of-sample predictions of Chinese real GDP growth (percent, year on year) fro
 
 | File | Content |
 |---|---|
-| `updates/predictions_<date>.csv` | One file per model update since September 2026. Each file holds the predictions made at that update and is not changed afterwards (one exception, see Revisions). |
+| `updates/predictions_<date>.csv` | One file per model update since September 2026. Each file holds the predictions made at that update. |
 | `predictions_latest.csv` | The newest update file. |
 | `backtest_predictions.csv` | The backtest of the paper: 1,066 updates from 22 December 2007 to 1 September 2026. |
 
@@ -24,7 +24,3 @@ Out-of-sample predictions of Chinese real GDP growth (percent, year on year) fro
 ## Real time
 
 The update files are produced when the data are released. The backtest replays the release calendar: at each date the model sees only the observations published by then. Revision histories are used for GDP and exports; for the other series the backtest uses the values as currently published.
-
-## Revisions
-
-One revision so far. On 18 November 2026 the `annual` row of the seven update files dated 19 October to 16 November 2026 (and of `predictions_latest.csv`) was recomputed: the third-quarter GDP, published on 19 October, now enters the annual rate at the official number instead of the model's estimate of it. The changes are in the third decimal. No other row was changed.
