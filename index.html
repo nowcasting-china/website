@@ -7,7 +7,7 @@
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261117a">
+<link rel="stylesheet" href="styles.css?v=20261118a">
 <script>window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] } };</script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
@@ -36,13 +36,13 @@
     <div class="card">
       <div class="card-title">Quarterly GDP growth: nowcast history and current reading
         <span class="hint">drag the range slider, or use the buttons, to change the window</span>
-        <button type="button" class="range-toggle" id="nowcast-yrange" title="The default range is 0 to 8 percent">Show full range</button></div>
+        <button type="button" class="range-toggle" id="nowcast-yrange" title="The default range starts at 0; its ceiling follows the period selected with the range slider">Show full range</button></div>
       <div id="fig-nowcast" class="fig-tall"></div>
     </div>
 
     <div class="card" id="quarter-card">
       <div class="card-title">Nowcast by target quarter
-        <span class="hint">pick a quarter: density of the latest estimate, impact of data releases, and the data flow</span></div>
+        <span class="hint">pick a quarter: density of the latest estimate, impact of data releases, and the data flow. Click an update on the impact chart for its density and the decomposition of the change since the previous update.</span></div>
       <div class="q-chips" id="q-chips"></div>
       <p class="q-summary" id="q-summary"></p>
       <div class="q-grid">
@@ -59,27 +59,28 @@
           <button class="q-expand" id="q-expand">Expand</button>
         </div>
       </div>
+      <p class="q-note">News is the released value minus the model's forecast of it, in the unit of the series (percentage points for growth rates, index points for surveys). The weight is the effect on the nowcast, in percentage points, of one unit of news. The impact is weight times news, computed for each posterior draw and then averaged, so it is close to, but not exactly, the product of the two columns. The number on the row of an update is the change in the nowcast since the previous update: the sum of the impacts and of "revisions &amp; other" below it. The FAQ gives the algebra.</p>
     </div>
   </div>
 
   <div id="tab-annual" class="tab-panel">
     <div class="card">
       <div class="card-title">Annual growth rate: model estimate vs institutions
-        <button type="button" class="range-toggle" id="annual-yrange" title="The default range is 0 to 8 percent">Show full range</button></div>
+        <button type="button" class="range-toggle" id="annual-yrange" title="The default range starts at 0; its ceiling follows the period selected with the range slider">Show full range</button></div>
       <div class="inst-controls" id="inst-controls"></div>
       <div id="fig-annual" class="fig-tall"></div>
     </div>
 
     <div class="card" id="year-card">
       <div class="card-title">Annual rate by year
-        <span class="hint">pick a year: density of the latest estimate, impact of data releases on the annual rate, and the data flow</span></div>
+        <span class="hint">pick a year: density of the latest estimate, progression of the annual rate with the institutions' forecasts and the government target, and the data flow. Click an update on the chart for its density and the decomposition of the change since the previous update.</span></div>
       <div class="q-chips" id="a-chips"></div>
       <p class="q-summary" id="a-summary"></p>
       <div class="q-grid">
         <div class="q-left">
           <div class="q-subtitle" id="a-density-title">Probability density</div>
           <div id="fig-a-density" class="fig-q-density"></div>
-          <div class="q-subtitle">Impact of data releases on the annual rate</div>
+          <div class="q-subtitle">Progression of the annual rate and impact of data releases</div>
           <div id="fig-a-impact" class="fig-q-impact"></div>
           <div id="a-impact-legend" class="q-legend"></div>
         </div>
@@ -89,7 +90,7 @@
           <button class="q-expand" id="a-expand">Expand</button>
         </div>
       </div>
-      <p class="q-note">The annual rate is the mean of the four quarterly YoY rates: released quarters at the official number, open quarters at the model estimate. A release's impact on the annual rate is its impact on each decomposed quarter divided by four; a GDP release also carries the switch from the model's backcast to the official quarterly number. The remainder is the change in the estimate not explained by the listed releases: re-estimation of the model between updates, data revisions, and any open quarter not decomposed at that date. The same definition is used on the nowcast tab.</p>
+      <p class="q-note">The annual rate is the mean of the four quarterly YoY rates: released quarters at the official number, open quarters at the model estimate. A release's impact on the annual rate is its impact on each decomposed quarter divided by four, and its weight is aggregated the same way; news, weight and impact are defined as on the nowcast tab and in the FAQ. When a quarter's GDP is published, the official number replaces the model's backcast: that row has the official number minus the backcast as news and a weight of 1/4. The remainder is the change in the estimate not explained by the listed releases: re-estimation of the model between updates, data revisions, and any open quarter not decomposed at that date. On the chart, the markers are the forecasts for that year published by the IMF, OECD, ADB and World Bank, at their publication dates; the dashed red line or band is the government target, from the day it was announced.</p>
     </div>
   </div>
 
@@ -143,8 +144,34 @@
         <li><b>Quarterly series</b> (GDP, the business climate index) are linked to the monthly latent variables by summing the three months of the quarter. <b>Combined January-February releases</b> enter as \(\bar g_t = w\, g_t^{\mathrm{Jan}} + (1-w)\, g_t^{\mathrm{Feb}}\) with \(w = 1/2\).</li>
       </ul>
       <p><b>Estimation.</b> The model is estimated by Gibbs sampling. The priors are calibrated on a presample, from the start of the data to December 2006, which is not used otherwise. The nowcast is the posterior predictive distribution of GDP growth; the bands are its 68% and 80% intervals.</p>
-      <p><b>Impact of releases.</b> Each update compares the new release with what the model expected. The difference, the news, times a weight that depends on how informative the series is about GDP, gives the release's impact on the nowcast. The part of the change not accounted for by the releases is shown as "revisions &amp; other".</p>
+      <p><b>Impact of releases.</b> Each update compares the new releases with what the model expected and attributes the change in the nowcast to each of them. The next section gives the algebra.</p>
       <p><b>Evaluation.</b> The model is evaluated in real time: at every release date since 2008 it is re-estimated on the data available on that day, and its predictions are scored against the GDP figure published later.</p>
+
+      <h3>How is the impact of a data release computed?</h3>
+      <p>Between two updates the nowcast changes because new data arrive. The change is split into the contribution of each release, following Ba&#324;bura and Modugno (2014).</p>
+      <p><b>News.</b> Let \(\Omega_{v-1}\) be the data available at the previous update and \(\Omega_v\) the data available now. For each newly released value \(x_j\), the news is the part the model did not expect:</p>
+      <div class="faq-math">
+        \[ \nu_j = x_j - E\left[ x_j \mid \Omega_{v-1} \right] \]
+      </div>
+      <p>The forecast \(E[x_j \mid \Omega_{v-1}]\) uses the parameters of the current estimation and the data of the previous update. A release equal to the model's forecast carries no news and does not move the nowcast, whether the number itself is high or low.</p>
+      <p><b>Weights.</b> The revision of the nowcast of GDP growth in quarter \(Q\), \(y_Q\), is a weighted sum of the news:</p>
+      <div class="faq-math">
+        \[ E\left[ y_Q \mid \Omega_v \right] - E\left[ y_Q \mid \Omega_{v-1} \right] = \sum_j w_j \, \nu_j, \qquad w = \mathrm{Cov}(y_Q, \nu) \, \mathrm{Var}(\nu)^{-1} \]
+      </div>
+      <p>The weight \(w_j\) is the effect on the nowcast, in percentage points, of one unit of news in release \(j\). It is larger when the series is closely tied to GDP through the common factor, when its own noise is small at that date (the stochastic volatility lowers the weight of a series while it is noisy), and when little other information about the same months is already available. Releases published on the same day are treated jointly, so each weight takes the other releases into account.</p>
+      <p><b>Impact.</b> The impact of release \(j\) is \(w_j \nu_j\). The model is Bayesian, so the news and the weights are computed for each posterior draw \(g = 1, \dots, G\) of the parameters and volatilities, and the impact is the average over the draws:</p>
+      <div class="faq-math">
+        \[ \mathrm{impact}_j = \frac{1}{G} \sum_{g=1}^{G} w_j^{(g)} \, \nu_j^{(g)} \]
+      </div>
+      <p>The tables report the average news, the average weight and the impact. The impact is an average of products, so it is close to, but not exactly, the product of the two columns; for a release with a very small weight the two can differ in sign.</p>
+      <p><b>Outliers.</b> When the model reads a release as an outlier, the outlier component is removed before the news is computed. Such a release carries little news, as it does in the nowcast itself.</p>
+      <p><b>Revisions and other.</b> The impacts account for the change that comes from the new releases. The nowcast also changes for other reasons: the model is re-estimated at every update, past data are revised, and the published nowcast is the median of the predictive distribution while the decomposition applies to its mean. These are grouped in "revisions &amp; other", computed as a remainder:</p>
+      <div class="faq-math">
+        \[ \mathrm{nowcast}_v - \mathrm{nowcast}_{v-1} = \sum_j \mathrm{impact}_j + \text{revisions and other} \]
+      </div>
+      <p><b>Annual rate.</b> The annual rate is the mean of the four quarterly rates, so the impact of a release on it is the sum of its impacts on the open quarters of the year, divided by four. Its weight is aggregated in the same way. When the GDP of a quarter is published, the official number replaces the model's backcast of that quarter: this adds (official number minus backcast) / 4, shown as a row of its own with a weight of 1/4.</p>
+      <p><b>Units and an example.</b> The news is in the unit of the series: percentage points for growth rates, index points for surveys. Suppose industrial production growth comes out 0.5 percentage point below the model's forecast and its weight is 0.09. The impact is \(0.09 \times (-0.5) = -0.045\): the nowcast falls by about 0.05 percentage point.</p>
+      <p class="q-note">Reference: M. Ba&#324;bura and M. Modugno (2014), "Maximum likelihood estimation of factor models on datasets with arbitrary pattern of missing data", Journal of Applied Econometrics 29(1), 133&ndash;160.</p>
 
       <h3>How often is the nowcast updated?</h3>
       <p>Every time a release in the panel comes out. On each release day the model is re-estimated with all the data published up to that day, and the nowcasts for the current quarter, the next quarter and the year are updated. A quarter's cycle runs from three months before it starts (forecast) through the quarter itself (nowcast) to the month of its GDP release (backcast). The release calendar for <span id="faq-cal-year">2026</span>, China dates:</p>
@@ -158,6 +185,6 @@
     Institution benchmarks are collected manually.
   </div>
 </div>
-<script src="app.js?v=20261117c"></script>
+<script src="app.js?v=20261118a"></script>
 </body>
 </html>

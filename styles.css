@@ -51,7 +51,8 @@ body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
 .q-chip.active { color: var(--navy); border-bottom-color: var(--red); }
 .q-chip + .q-chip::before { content: ''; }
 .q-summary { font-size: 13.5px; color: var(--ink); margin: 2px 0 10px; line-height: 1.5; }
-.q-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; }
+.q-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; }
+.q-left, .q-right { min-width: 0; }
 @media (max-width: 900px) { .q-grid { grid-template-columns: 1fr; } }
 .q-subtitle { font-size: 14px; font-weight: 600; margin: 4px 0 2px; color: var(--ink); }
 .fig-q-density { width: 100%; height: 230px; }
@@ -77,9 +78,17 @@ body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
   padding: 5px 14px; border-radius: 6px; font-family: inherit; font-size: 12.5px; cursor: pointer; }
 .q-note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; line-height: 1.45; }
 
-/* public build: model results only -- the "Actual" column (4th) of the data-flow tables is hidden */
-body.public #q-flow th:nth-child(4), body.public #q-flow td:nth-child(4),
-body.public #a-flow th:nth-child(4), body.public #a-flow td:nth-child(4) { display: none; }
+/* public build: model results only -- app.js leaves the "Actual" and "Model forecast" columns of
+   the data-flow tables out (flowHTML), so nothing is hidden here */
+/* data-flow tables with the algebra of the news: narrower cells, sideways scroll on small screens */
+.q-table-wrap { overflow-x: auto; }
+#q-flow th, #q-flow td, #a-flow th, #a-flow td { padding-left: 5px; padding-right: 5px; }
+#q-flow, #a-flow { font-size: 12px; }
+#q-flow td.num, #a-flow td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.q-table tr.q-prev td { font-weight: 500; color: var(--muted); }
+/* impact charts: an update can be clicked (its density, the decomposition of its change) */
+.fig-q-impact .nsewdrag { cursor: pointer; }
+.q-legend .mk { display: inline-block; flex: none; }
 
 /* FAQ tab */
 .faq h3 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 20px; color: var(--navy); margin: 22px 0 8px; }
