@@ -31,11 +31,12 @@ const SER_COL = {
   N924VB: COL.BCI, N924NGPY: COL.GDP
 };
 // symmetric y-range for stacked impact bars: the largest positive / negative stack, padded
-const barRange = byLab => {
+// (top: the upper end in units of the largest stack; the larger it is, the lower the bars end)
+const barRange = (byLab, top = 1.9) => {
   const ls = Object.keys(byLab); let m = 0.02;
   const n = ls.length ? byLab[ls[0]].length : 0;
   for (let i = 0; i < n; i++) { let u = 0, d = 0; ls.forEach(l => { const v = byLab[l][i] || 0; if (v > 0) u += v; else d += v; }); m = Math.max(m, u, -d); }
-  return [-1.15 * m, 1.9 * m];
+  return [-1.15 * m, top * m];
 };
 // right-axis range that keeps the level line in the upper third of the panel, above the bars
 const lineRange = vals => {
@@ -425,6 +426,23 @@ function flowHTML(P, idx, o) {
   }
   return h + '</tbody>';
 }
+// The box of a data-flow table ends at the bottom edge of the chart beside it: the expanded list
+// scrolls inside it and never runs below the chart.  In the one-column layout (the table is under
+// the chart) and on a hidden tab it keeps the max-height of the stylesheet.  Refitted whenever the
+// grid changes size (window, tab shown, hover lines added) and after every rendering of the table.
+const fitFlow = (tableId, figId) => {
+  const tb = document.getElementById(tableId), fig = document.getElementById(figId);
+  if (!tb || !fig || !fig.offsetParent) return;
+  const wrap = tb.parentNode;
+  const h = fig.getBoundingClientRect().bottom - wrap.getBoundingClientRect().top;
+  wrap.style.maxHeight = h > 200 ? Math.round(h) + 'px' : '';
+};
+const watchFlow = (tableId, figId) => {
+  const fit = () => fitFlow(tableId, figId);
+  const grid = document.getElementById(figId).closest('.q-grid');
+  if (grid && window.ResizeObserver) new ResizeObserver(fit).observe(grid);
+  window.addEventListener('resize', fit);
+};
 // the HTML legend below an impact chart (never collides with the axis, any width)
 const lgBar = (col, name) => `<span class="item"><span class="sq" style="background:${col}"></span>${name}</span>`;
 const lgLine = (col, dashed, name) => `<span class="item"><span class="ln" style="border-color:${col};border-style:${dashed ? 'dashed' : 'solid'}"></span>${name}</span>`;
@@ -459,6 +477,7 @@ function renderQuarters(D) {
     renderFlow(Q_CUR);
   });
   showQuarter(Q[Q.length - 1]);
+  watchFlow('q-flow', 'fig-q-impact');
 }
 
 function showQuarter(qq) {
@@ -579,6 +598,7 @@ function renderFlow(qq) {
       ? 're-estimated with this date\'s releases; their impact on the backcast quarter was not decomposed for vintages before Sep 2026'
       : 'no new releases'
   });
+  fitFlow('q-flow', 'fig-q-impact');
 }
 
 function tabAnnual(D) {
@@ -764,6 +784,7 @@ function renderYears(D) {
     renderYearFlow(Y_CUR);
   });
   showYear(YS[YS.length - 1]);
+  watchFlow('a-flow', 'fig-a-impact');
 }
 
 function showYear(yy) {
@@ -858,8 +879,11 @@ function showYear(yy) {
   // the corner legend gets a strip of its own at the top of the panel (LG_ROOM of its height, above
   // the highest level drawn; the bars end lower), so that it never covers the lines or the markers;
   // the larger top margin keeps Plotly's toolbar off it
-  const LG_ROOM = 0.12, y2r = lineRange(lvl);
-  if (nInst && y2r) y2r[1] += LG_ROOM / (1 - LG_ROOM) * (y2r[1] - y2r[0]);
+  // Both axes get that strip, so the panel keeps its two bands: the tallest stack of bars ends at
+  // 65% of the height below the strip and the lowest level drawn (line, target or institution
+  // marker) sits at 74%; a bar therefore never reaches a marker
+  const LG_ROOM = 0.12, y2r = lineRange(lvl), y1r = barRange(byLab, 2.15);
+  if (nInst) [y1r, y2r].forEach(r => { if (r) r[1] += LG_ROOM / (1 - LG_ROOM) * (r[1] - r[0]); });
   // bars on their own symmetric axis (left, pp); the annual rate and the benchmarks on the right axis (percent)
   Plotly.newPlot('fig-a-impact', tr, Object.assign({}, LAYOUT, {
     barmode: 'relative', hovermode: 'x unified', showlegend: nInst > 0,
@@ -869,7 +893,7 @@ function showYear(yy) {
     margin: { l: 55, r: 55, t: nInst ? 30 : 15, b: 60 },
     xaxis: { type: 'date', range: [xFirst, xLast], dtick: 'M1', tick0: `${Y}-01-01`, tickformat: '%b', ticklabelmode: 'period',
              title: { text: 'model update, ' + Y, standoff: 12 }, automargin: true, tickfont: { size: 11 }, hoverformat: ' ' },
-    yaxis: { title: 'impact, pp', zeroline: true, zerolinecolor: '#999', range: barRange(byLab), fixedrange: false },
+    yaxis: { title: 'impact, pp', zeroline: true, zerolinecolor: '#999', range: y1r, fixedrange: false },
     yaxis2: { title: { text: 'annual rate, percent', font: { color: COL.navy } }, tickfont: { color: COL.navy },
               overlaying: 'y', side: 'right', showgrid: false, zeroline: false, range: y2r }
   }), { responsive: true, displaylogo: false }).then(gd => {
@@ -922,4 +946,5 @@ function renderYearFlow(yy) {
     revLabel: p => p.all_open ? 'Revisions & other' : 'Undecomposed quarters, revisions & other',
     empty: () => 'first update of the year'
   });
+  fitFlow('a-flow', 'fig-a-impact');
 }

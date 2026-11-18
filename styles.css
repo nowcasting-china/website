@@ -57,6 +57,8 @@ body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
 .q-subtitle { font-size: 14px; font-weight: 600; margin: 4px 0 2px; color: var(--ink); }
 .fig-q-density { width: 100%; height: 230px; }
 .fig-q-impact  { width: 100%; height: 420px; }
+/* the annual progression chart is taller: it also carries the institutions and their legend */
+#fig-a-impact { height: 520px; }
 .q-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 2px 6px; font-size: 11.5px; color: var(--ink); }
 .q-legend .item { display: inline-flex; align-items: center; gap: 5px; }
 .q-legend .sq { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
