@@ -60,6 +60,7 @@ body { font-family: 'DM Sans', system-ui, sans-serif; color: var(--ink);
 /* the annual progression chart is taller: it also carries the institutions and their legend */
 #fig-a-impact { height: 520px; }
 .q-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 2px 6px; font-size: 11.5px; color: var(--ink); }
+.dens-legend { margin: 0 0 10px 46px; }
 .q-legend .item { display: inline-flex; align-items: center; gap: 5px; }
 .q-legend .sq { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 .q-legend .ln { display: inline-block; width: 18px; height: 0; border-top: 2px solid; }

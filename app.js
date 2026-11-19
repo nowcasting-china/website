@@ -158,6 +158,13 @@ const INST = {
   ADB:  { sym: 'square',      col: '#7340A6', label: 'ADB ADO' },
   WB:   { sym: 'circle',      col: '#2170D1', label: 'WB GEP' }
 };
+// their marker on both annual charts: solid, with a black edge, at 75% opacity so the blue line
+// still shows through (Wei's choice, 19 Nov 2026)
+const instMarker = (k, size) => ({ symbol: INST[k].sym, size, color: INST[k].col, opacity: 0.75,
+                                   line: { color: '#000', width: 0.8 } });
+// the round points of the model line on the two progression charts: navy with a dark blue edge
+const NOW_EDGE = '#0B2566';
+const nowMarker = size => ({ size, color: COL.navy, line: { color: NOW_EDGE, width: 1.2 } });
 const GOV_COL = '#BF1426';
 const MK_SHAPE = {
   'triangle-up': '<path d="M6 1.2 L11 10.6 L1 10.6 Z"/>',
@@ -333,6 +340,27 @@ const densRange = (obj, extra) => {
   (extra || []).forEach(v => { if (v != null) { lo = Math.min(lo, v - 0.15); hi = Math.max(hi, v + 0.15); } });
   return isFinite(lo) && isFinite(hi) ? [lo, hi] : undefined;
 };
+// the part of a density between a and b (the pdf is interpolated at the two ends, like the curve)
+const densSeg = (dt, a, b) => {
+  const x = dt.x, n = x.length;
+  const at = v => {
+    if (v <= x[0]) return dt.pdf[0];
+    if (v >= x[n - 1]) return dt.pdf[n - 1];
+    let k = 1;  while (x[k] < v) k++;
+    return dt.pdf[k - 1] + (v - x[k - 1]) / (x[k] - x[k - 1]) * (dt.pdf[k] - dt.pdf[k - 1]);
+  };
+  a = Math.max(a, x[0]);  b = Math.min(b, x[n - 1]);
+  const X = [a], Y = [at(a)];
+  x.forEach((v, k) => { if (v > a && v < b) { X.push(v); Y.push(dt.pdf[k]); } });
+  X.push(b);  Y.push(at(b));
+  return { x: X, y: Y };
+};
+// shades of the density: the whole curve, the 80% interval and the 68% interval, the same two
+// intervals as the bands of the history chart.  The layers are drawn one over the other, so
+// DENS_ADD holds what each layer adds and DENS_TONE the tone the reader sees (legend swatches).
+const DENS_TONE = { all: 0.08, p80: 0.21, p68: 0.38 };
+const DENS_ADD = { all: 0.08, p80: 0.14, p68: 0.215 };
+const densFill = a => `rgba(31,78,156,${a})`;
 // the density chart of update i.  o: fig, title (element ids), xtitle, ref ({v, text}: the official
 // number, when published), range (x-range; undefined = fitted to this density)
 function drawDensity(obj, i, o) {
@@ -343,8 +371,26 @@ function drawDensity(obj, i, o) {
     el.innerHTML = '<p style="color:#6b7482;padding:12px">No density stored for this update.</p>';
     const hl = el.previousElementSibling;
     if (hl && hl.classList.contains('hover-line')) hl.textContent = '';
+    const lgOld = el.nextElementSibling;
+    if (lgOld && lgOld.classList.contains('dens-legend')) lgOld.innerHTML = '';
     return;
   }
+  // the 68% and 80% intervals of this update (quantiles of the posterior draws, as in the text
+  // above the chart), shaded under the curve and listed below the chart
+  const bandTr = [], lgItems = [];
+  [['p80', p.lo80, p.hi80, '80%'], ['p68', p.lo, p.hi, '68%']].forEach(([key, a, b, lab]) => {
+    if (a == null || b == null || !(b > a)) return;
+    bandTr.push(Object.assign(densSeg(dt, a, b), { mode: 'lines', line: { width: 0 }, fill: 'tozeroy',
+      fillcolor: densFill(DENS_ADD[key]), hoverinfo: 'skip', showlegend: false }));
+    lgItems.unshift(`<span class="item"><span class="sq" style="background:${densFill(DENS_TONE[key])}"></span>` +
+      `${lab} interval [${a.toFixed(1)}, ${b.toFixed(1)}]%</span>`);
+  });
+  let lg = el.nextElementSibling;
+  if (!lg || !lg.classList.contains('dens-legend')) {
+    lg = document.createElement('div');  lg.className = 'q-legend dens-legend';
+    el.parentNode.insertBefore(lg, el.nextSibling);
+  }
+  lg.innerHTML = lgItems.join('');
   if (!el.querySelector('.plot-container')) el.innerHTML = '';
   const ref = o.ref, refLeft = ref && ref.v < p.med;
   const shapes = [{ type: 'line', x0: p.med, x1: p.med, y0: 0, y1: 1, yref: 'paper',
@@ -359,9 +405,9 @@ function drawDensity(obj, i, o) {
   if (ref) ann.push({ x: ref.v, y: 1, yref: 'paper', text: ref.text, showarrow: false,
                       xanchor: refLeft ? 'right' : 'left', yanchor: 'bottom', yshift: 2,
                       xshift: refLeft ? -3 : 3, font: { color: COL.gray, size: 11 } });
-  Plotly.newPlot(el, [{ x: dt.x, y: dt.pdf, mode: 'lines', fill: 'tozeroy', fillcolor: 'rgba(31,78,156,0.18)',
+  Plotly.newPlot(el, bandTr.concat([{ x: dt.x, y: dt.pdf, mode: 'lines', fill: 'tozeroy', fillcolor: densFill(DENS_ADD.all),
                         line: { color: COL.navy, width: 2 }, name: 'density', hoverinfo: 'none',
-                        customdata: dt.x.map((x, k) => `${x.toFixed(2)}%: density ${dt.pdf[k].toFixed(3)}`) }],
+                        customdata: dt.x.map((x, k) => `${x.toFixed(2)}%: density ${dt.pdf[k].toFixed(3)}`) }]),
     Object.assign({}, LAYOUT, {
       showlegend: false, shapes, margin: { l: 45, r: 15, t: 24, b: 35 }, hovermode: 'x',
       xaxis: Object.assign({ title: o.xtitle, zeroline: false }, o.range ? { range: o.range.slice() } : {}),
@@ -528,7 +574,7 @@ function showQuarter(qq) {
     lg.push(lgBar(LABEL_COL[l] || COL.gray, l));
   });
   tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: lab + ' ' + 'nowcast', yaxis: 'y2', meta: 'upd',
-            line: { color: COL.navy, width: 2.2 }, marker: { size: 6, color: COL.navy }, hoverinfo: 'none',
+            line: { color: COL.navy, width: 2.2 }, marker: nowMarker(6), hoverinfo: 'none',
             customdata: P.map((p, i) => `${lab}: ${p.med.toFixed(2)}% (update ${dates[i]})`) });
   lg.push(lgLine(COL.navy, false, lab + ' nowcast'));
   if (qq.gdp) {
@@ -683,8 +729,7 @@ function tabAnnual(D) {
     const s = (D.institutions || []).filter(d => d.inst === k);
     if (!s.length) return;
     tr.push({ x: s.map(d => d.date), y: s.map(d => d.v), mode: 'markers', hoverinfo: 'skip',
-      marker: { symbol: INST[k].sym, size: 10, color: INST[k].col, opacity: 0.85,
-                line: { color: '#000', width: 0.8 } }, name: INST[k].label });
+      marker: instMarker(k, 11), name: INST[k].label });
   });
 
   // government targets: star (point), vertical bar (range), star (floor); like the institutions,
@@ -853,7 +898,7 @@ function showYear(yy) {
     lg.push(lgLine(GOV_COL, true, 'Govt. target: ' + tgtText(g)));
   }
   tr.push({ x: xb, y: P.map(p => p.med), mode: 'lines+markers', name: yy.label + ' annual rate', yaxis: 'y2', meta: 'upd',
-            line: { color: COL.navy, width: 2.2 }, marker: { size: 5, color: COL.navy }, hoverinfo: 'none',
+            line: { color: COL.navy, width: 2.2 }, marker: nowMarker(5), hoverinfo: 'none',
             customdata: P.map((p, i) => `${yy.label}: ${p.med.toFixed(2)}% (update ${dates[i]})`) });
   lg.push(lgLine(COL.navy, false, yy.label + ' annual rate'));
   if (off) {
@@ -871,7 +916,7 @@ function showYear(yy) {
     if (!f.length) return;
     tr.push({ x: f.map(d => d.date), y: f.map(d => d.v), mode: 'markers', yaxis: 'y2', name: INST[k].label, hoverinfo: 'skip',
               showlegend: true,
-              marker: { symbol: INST[k].sym, size: 9, color: INST[k].col, opacity: 0.9, line: { color: '#000', width: 0.8 } } });
+              marker: instMarker(k, 10) });
     nInst++;
     f.forEach(d => lvl.push(d.v));
   });
